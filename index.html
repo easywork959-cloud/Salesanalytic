@@ -1,0 +1,3375 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sales Analytics — DC Performance</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  body { font-family: 'Inter', 'Sarabun', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-font-smoothing: antialiased; }
+  .card { background: white; border: 1px solid #E5E7EB; border-radius: 12px; }
+  .card-hover:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+  .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 500; }
+  .b-green  { background: #ECFDF5; color: #047857; }
+  .b-blue   { background: #EFF6FF; color: #1D4ED8; }
+  .b-amber  { background: #FFFBEB; color: #B45309; }
+  .b-rose   { background: #FFF1F2; color: #BE123C; }
+  .b-slate  { background: #F1F5F9; color: #475569; }
+  .drop-zone { transition: all 0.15s ease; }
+  .drop-zone.drag-over { background: #EFF6FF !important; border-color: #3B82F6 !important; }
+  /* Custom scroll */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: #F9FAFB; }
+  ::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #9CA3AF; }
+  /* Table styles */
+  .data-table th { font-weight: 500; font-size: 11px; color: #6B7280; text-transform: uppercase; letter-spacing: 0.05em; }
+  .data-table td { font-size: 13px; color: #1F2937; }
+  .data-table tbody tr:hover { background: #F9FAFB; }
+  .num-right { text-align: right; font-variant-numeric: tabular-nums; }
+  /* Loading spinner */
+  .spinner { border: 3px solid #E5E7EB; border-top: 3px solid #3B82F6; border-radius: 50%; width: 28px; height: 28px; animation: spin 0.8s linear infinite; }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  /* Tab styles */
+  .tab-btn { padding: 8px 14px; border-radius: 8px; font-size: 13px; color: #6B7280; transition: all 0.15s; cursor: pointer; }
+  .tab-btn:hover { background: #F9FAFB; color: #1F2937; }
+  .tab-btn.active { background: #1F2937; color: white; }
+</style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+
+<!-- ============================================================
+     APP SHELL
+     ============================================================ -->
+
+<div class="max-w-7xl mx-auto px-6 py-4">
+
+  <!-- Header -->
+  <header class="flex items-center justify-between mb-4">
+    <div>
+      <h1 class="text-xl font-semibold text-slate-900">Sales Analytics</h1>
+      <p class="text-xs text-slate-500">FMCG DC Performance — Outlet scoring &amp; action planning</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <span id="storage-info" class="text-xs text-slate-500">No data loaded</span>
+      <button id="btn-export-excel" class="px-3 py-1.5 text-sm bg-slate-900 text-white rounded-lg hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed" disabled>
+        Export Excel
+      </button>
+      <button id="btn-export-csv" class="px-3 py-1.5 text-sm border border-slate-200 rounded-lg hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed" disabled>
+        Export CSV
+      </button>
+    </div>
+  </header>
+
+  <!-- Tabs -->
+  <div class="flex gap-2 mb-3 border-b border-slate-200 pb-2">
+    <div class="tab-btn active" data-tab="upload">📤 Upload Data</div>
+    <div class="tab-btn" data-tab="overview">📊 Overview</div>
+    <div class="tab-btn" data-tab="outlets">🏪 Outlets</div>
+    <div class="tab-btn" data-tab="actions">🎯 Actions</div>
+    <div class="tab-btn" data-tab="trend">📈 Monthly Trend</div>
+    <div class="tab-btn" data-tab="settings">⚙️ Settings</div>
+  </div>
+
+  <!-- ============================================================
+       TAB: UPLOAD
+       ============================================================ -->
+  <section id="tab-upload" class="tab-panel">
+
+    <!-- Drop zone -->
+    <div id="drop-zone" class="drop-zone card p-10 border-2 border-dashed border-slate-300 text-center">
+      <div class="mx-auto w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mb-4">
+        <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+        </svg>
+      </div>
+      <h2 class="text-lg font-medium text-slate-900">Upload data for 1 DC</h2>
+      <p class="text-sm text-slate-500 mt-1 mb-4">Drag & drop or click to browse</p>
+      <input type="file" id="file-input" multiple class="hidden" accept=".xlsx,.xls">
+      <div class="flex gap-2 justify-center">
+        <button onclick="document.getElementById('file-input').click()"
+                class="px-4 py-2 bg-slate-900 text-white text-sm rounded-lg hover:bg-slate-800">
+          Browse files
+        </button>
+        <button id="btn-load-demo"
+                class="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700">
+          🎬 Load Demo (DC 302)
+        </button>
+      </div>
+      <p class="text-xs text-slate-400 mt-4">
+        Accept any mix of Sellout / HH Transaction / ScoreAch files (1 or more of each).
+        Multi-month files welcome.
+      </p>
+    </div>
+
+    <!-- File staging area -->
+    <div id="file-staging" class="hidden mt-4">
+      <div class="card p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-medium text-slate-900">Staged files</h3>
+          <div class="flex gap-2">
+            <button id="btn-clear-files" class="text-xs text-slate-500 hover:text-slate-700">Clear</button>
+            <button id="btn-process" class="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+              Process this DC →
+            </button>
+          </div>
+        </div>
+        <div id="staged-list" class="space-y-1 text-sm"></div>
+      </div>
+    </div>
+
+    <!-- Processing progress -->
+    <div id="processing" class="hidden mt-4 card p-5">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="spinner"></div>
+        <div>
+          <div class="font-medium text-slate-900" id="processing-title">Processing data...</div>
+          <div class="text-xs text-slate-500" id="processing-step">Initializing</div>
+        </div>
+      </div>
+      <div class="w-full bg-slate-100 rounded-full h-2">
+        <div id="progress-bar" class="bg-blue-500 h-2 rounded-full transition-all" style="width: 0%"></div>
+      </div>
+    </div>
+
+    <!-- Loaded DCs list -->
+    <div class="mt-8">
+      <h3 class="font-medium text-slate-900 mb-3">Loaded DCs</h3>
+      <div id="dc-list" class="space-y-2">
+        <div class="card p-4 text-sm text-slate-400 italic">No DCs loaded yet — upload to get started</div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ============================================================
+       TAB: OVERVIEW (sections with readable charts)
+       ============================================================ -->
+  <section id="tab-overview" class="tab-panel hidden">
+
+    <!-- Filter bar -->
+    <div class="card px-3 py-2 mb-4">
+      <div class="flex flex-wrap items-center gap-2 text-xs">
+        <span class="text-slate-500 font-medium mr-1">FILTER</span>
+        <select id="filter-dc" class="px-2 py-1 text-xs border border-slate-200 rounded bg-white">
+          <option value="">All DCs</option>
+        </select>
+        <select id="filter-channel" class="px-2 py-1 text-xs border border-slate-200 rounded bg-white">
+          <option value="">All Channels</option>
+        </select>
+        <select id="filter-salesman" class="px-2 py-1 text-xs border border-slate-200 rounded bg-white">
+          <option value="">All Salesmen</option>
+        </select>
+        <select id="filter-month" class="px-2 py-1 text-xs border border-slate-200 rounded bg-white">
+          <option value="">Latest Month</option>
+        </select>
+        <span id="filter-context" class="text-slate-400 ml-2"></span>
+        <button id="btn-reset-filter" class="text-slate-500 hover:text-slate-800 ml-auto">Reset</button>
+      </div>
+    </div>
+
+    <!-- ============ Section 1: 12-Month Trend ============ -->
+    <div class="mb-5">
+      <div class="flex items-baseline justify-between mb-2">
+        <h2 class="text-xs font-semibold text-slate-700 uppercase tracking-wider">12-Month Trend</h2>
+        <span class="text-[11px] text-slate-400" id="trend-months-label">—</span>
+      </div>
+
+      <!-- Row 1: Output (Sales / Bills / Drop Size) -->
+      <div class="grid grid-cols-12 gap-3 mb-3">
+
+        <div class="col-span-4 card p-3">
+          <div class="flex items-baseline justify-between mb-1">
+            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">Sales</h4>
+            <span class="badge b-slate" id="kpi-sales-mom">—</span>
+          </div>
+          <div class="flex items-baseline gap-2 mb-1">
+            <span class="text-xl font-bold text-slate-900" id="kpi-sales">—</span>
+          </div>
+          <div class="text-[10px] text-slate-500 mb-2">
+            vs 3M: <span class="font-semibold text-slate-700" id="kpi-sales-vs3m">—</span>
+            · Top Q SM: <span class="font-semibold text-slate-700" id="kpi-sales-topq">—</span>
+          </div>
+          <div style="position:relative;height:140px"><canvas id="trend-sales"></canvas></div>
+        </div>
+
+        <div class="col-span-4 card p-3">
+          <div class="flex items-baseline justify-between mb-1">
+            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">Bills (Invoices)</h4>
+            <span class="badge b-slate" id="kpi-bills-mom">—</span>
+          </div>
+          <div class="flex items-baseline gap-2 mb-1">
+            <span class="text-xl font-bold text-slate-900" id="kpi-bills">—</span>
+          </div>
+          <div class="text-[10px] text-slate-500 mb-2">
+            vs 3M: <span class="font-semibold text-slate-700" id="kpi-bills-vs3m">—</span>
+            · Top Q SM: <span class="font-semibold text-slate-700" id="kpi-bills-topq">—</span>
+          </div>
+          <div style="position:relative;height:140px"><canvas id="trend-bills"></canvas></div>
+        </div>
+
+        <div class="col-span-4 card p-3">
+          <div class="flex items-baseline justify-between mb-1">
+            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">Drop Size</h4>
+            <span class="badge b-slate" id="kpi-drop-mom">—</span>
+          </div>
+          <div class="flex items-baseline gap-2 mb-1">
+            <span class="text-xl font-bold text-slate-900" id="kpi-drop">—</span>
+          </div>
+          <div class="text-[10px] text-slate-500 mb-2">
+            vs 3M: <span class="font-semibold text-slate-700" id="kpi-drop-vs3m">—</span>
+            · Top Q SM: <span class="font-semibold text-slate-700" id="kpi-drop-topq">—</span>
+          </div>
+          <div style="position:relative;height:140px"><canvas id="trend-drop"></canvas></div>
+        </div>
+
+      </div>
+
+      <!-- Row 2: Outlet Universe (Active / Coverage / SKU) -->
+      <div class="grid grid-cols-12 gap-3 mb-3">
+
+        <div class="col-span-4 card p-3">
+          <div class="flex items-baseline justify-between mb-1">
+            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">Active Outlets</h4>
+            <span class="badge b-slate" id="kpi-active-mom">—</span>
+          </div>
+          <div class="flex items-baseline gap-2 mb-1">
+            <span class="text-xl font-bold text-slate-900" id="kpi-active">—</span>
+          </div>
+          <div class="text-[10px] text-slate-500 mb-2">
+            %ASO: <span class="font-semibold text-slate-700" id="kpi-aso">—</span>
+            · vs 3M: <span class="font-semibold text-slate-700" id="kpi-active-vs3m">—</span>
+          </div>
+          <div style="position:relative;height:140px"><canvas id="trend-active"></canvas></div>
+        </div>
+
+        <div class="col-span-4 card p-3">
+          <div class="flex items-baseline justify-between mb-1">
+            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">Coverage (Plan)</h4>
+            <span class="badge b-slate" id="kpi-coverage-mom">—</span>
+          </div>
+          <div class="flex items-baseline gap-2 mb-1">
+            <span class="text-xl font-bold text-slate-900" id="kpi-coverage">—</span>
+          </div>
+          <div class="text-[10px] text-slate-500 mb-2">
+            vs 3M: <span class="font-semibold text-slate-700" id="kpi-coverage-vs3m">—</span>
+            · Total: <span class="font-semibold text-slate-700" id="kpi-coverage-detail">—</span>
+          </div>
+          <div style="position:relative;height:140px"><canvas id="trend-coverage"></canvas></div>
+        </div>
+
+        <div class="col-span-4 card p-3">
+          <div class="flex items-baseline justify-between mb-1">
+            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">SKU / Outlet</h4>
+            <span class="badge b-slate" id="kpi-sku-mom">—</span>
+          </div>
+          <div class="flex items-baseline gap-2 mb-1">
+            <span class="text-xl font-bold text-slate-900" id="kpi-sku">—</span>
+          </div>
+          <div class="text-[10px] text-slate-500 mb-2">
+            vs 3M: <span class="font-semibold text-slate-700" id="kpi-sku-vs3m">—</span>
+            · Top Q SM: <span class="font-semibold text-slate-700" id="kpi-sku-topq">—</span>
+          </div>
+          <div style="position:relative;height:140px"><canvas id="trend-sku"></canvas></div>
+        </div>
+
+      </div>
+
+      <!-- Row 3: Visit Activity (Visit Call / %Extra Call / Strike Rate) -->
+      <div class="grid grid-cols-12 gap-3 mb-3">
+
+        <div class="col-span-4 card p-3">
+          <div class="flex items-baseline justify-between mb-1">
+            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">Visit Call</h4>
+            <span class="badge b-slate" id="kpi-visits-mom">—</span>
+          </div>
+          <div class="flex items-baseline gap-2 mb-1">
+            <span class="text-xl font-bold text-slate-900" id="kpi-visits">—</span>
+          </div>
+          <div class="text-[10px] text-slate-500 mb-2">
+            vs 3M: <span class="font-semibold text-slate-700" id="kpi-visits-vs3m">—</span>
+            · Top Q SM: <span class="font-semibold text-slate-700" id="kpi-visits-topq">—</span>
+          </div>
+          <div style="position:relative;height:140px"><canvas id="trend-visits"></canvas></div>
+        </div>
+
+        <div class="col-span-4 card p-3">
+          <div class="flex items-baseline justify-between mb-1">
+            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">%Extra Call</h4>
+            <span class="badge b-slate" id="kpi-extra-mom">—</span>
+          </div>
+          <div class="flex items-baseline gap-2 mb-1">
+            <span class="text-xl font-bold text-slate-900" id="kpi-extra">—</span>
+          </div>
+          <div class="text-[10px] text-slate-500 mb-2">
+            vs 3M: <span class="font-semibold text-slate-700" id="kpi-extra-vs3m">—</span>
+            · Top Q SM: <span class="font-semibold text-slate-700" id="kpi-extra-topq">—</span>
+          </div>
+          <div style="position:relative;height:140px"><canvas id="trend-extra"></canvas></div>
+        </div>
+
+        <div class="col-span-4 card p-3">
+          <div class="flex items-baseline justify-between mb-1">
+            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">Strike Rate</h4>
+            <span class="badge b-slate" id="kpi-strike-mom">—</span>
+          </div>
+          <div class="flex items-baseline gap-2 mb-1">
+            <span class="text-xl font-bold text-slate-900" id="kpi-strike">—</span>
+          </div>
+          <div class="text-[10px] text-slate-500 mb-2">
+            vs 3M: <span class="font-semibold text-slate-700" id="kpi-strike-vs3m">—</span>
+            · Top Q SM: <span class="font-semibold text-slate-700" id="kpi-strike-topq">—</span>
+          </div>
+          <div style="position:relative;height:140px"><canvas id="trend-strike"></canvas></div>
+        </div>
+
+      </div>
+
+      <!-- Row 4: Score & Pipeline (PFS / Compliance / Uplift) -->
+      <div class="grid grid-cols-12 gap-3">
+
+        <div class="col-span-4 card p-3">
+          <div class="flex items-baseline justify-between mb-1">
+            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">PFS Score</h4>
+            <span class="badge b-slate" id="kpi-pfs-mom">—</span>
+          </div>
+          <div class="flex items-baseline gap-2 mb-1">
+            <span class="text-xl font-bold text-slate-900" id="kpi-pfs">—</span>
+          </div>
+          <div class="text-[10px] text-slate-500 mb-2">
+            vs 3M: <span class="font-semibold text-slate-700" id="kpi-pfs-vs3m">—</span>
+            · Top Q SM: <span class="font-semibold text-slate-700" id="kpi-pfs-topq">—</span>
+          </div>
+          <div style="position:relative;height:140px"><canvas id="trend-pfs"></canvas></div>
+        </div>
+
+        <div class="col-span-4 card p-3">
+          <div class="flex items-baseline justify-between mb-1">
+            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">Visit Compliance</h4>
+            <span class="badge b-slate" id="kpi-compliance-mom">—</span>
+          </div>
+          <div class="flex items-baseline gap-2 mb-1">
+            <span class="text-xl font-bold text-slate-900" id="kpi-compliance">—</span>
+          </div>
+          <div class="text-[10px] text-slate-500 mb-2">
+            vs 3M: <span class="font-semibold text-slate-700" id="kpi-compliance-vs3m">—</span>
+            · Top Q SM: <span class="font-semibold text-slate-700" id="kpi-compliance-topq">—</span>
+          </div>
+          <div style="position:relative;height:140px"><canvas id="trend-compliance"></canvas></div>
+        </div>
+
+        <div class="col-span-4 card p-3">
+          <div class="flex items-baseline justify-between mb-1">
+            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">Uplift Pipeline</h4>
+            <span class="badge b-slate" id="kpi-uplift-mom">—</span>
+          </div>
+          <div class="flex items-baseline gap-2 mb-1">
+            <span class="text-xl font-bold text-emerald-600" id="kpi-uplift">—</span>
+          </div>
+          <div class="text-[10px] text-slate-500 mb-2">
+            <span id="kpi-uplift-count">— actions</span>
+            · vs 3M: <span class="font-semibold text-slate-700" id="kpi-uplift-vs3m">—</span>
+          </div>
+          <div style="position:relative;height:140px"><canvas id="trend-uplift"></canvas></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ============ Section 2: Distribution ============ -->
+    <div class="mb-5">
+      <h2 class="text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Outlet Distribution</h2>
+      <div class="grid grid-cols-12 gap-3">
+
+        <!-- Channel Mix doughnut -->
+        <div class="col-span-4 card p-3">
+          <h4 class="text-xs font-medium text-slate-700 mb-2">Sales by Channel</h4>
+          <div style="position:relative;height:240px"><canvas id="chart-channel"></canvas></div>
+        </div>
+
+        <!-- Outlet Quadrant 3×3 -->
+        <div class="col-span-4 card p-3">
+          <h4 class="text-xs font-medium text-slate-700 mb-2">Outlet Quadrant (Active only)</h4>
+          <div id="quadrant-grid" class="grid grid-cols-3 gap-1.5 text-center text-xs"></div>
+          <p class="text-[10px] text-slate-400 mt-2 text-center">Performance ↑ × Health → · Numbers = outlet count</p>
+        </div>
+
+        <!-- Outlet Lifecycle -->
+        <div class="col-span-4 card p-3">
+          <h4 class="text-xs font-medium text-slate-700 mb-2">Outlet Lifecycle</h4>
+          <div id="lifecycle-bars"></div>
+          <p class="text-[10px] text-slate-400 mt-2">By days since last NET-positive sale</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ============ Section 3: Action Priorities & Rankings ============ -->
+    <div>
+      <h2 class="text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Action Priorities &amp; Rankings</h2>
+      <div class="grid grid-cols-12 gap-3">
+
+        <!-- Action Priority bar chart -->
+        <div class="col-span-4 card p-3">
+          <h4 class="text-xs font-medium text-slate-700 mb-2">Action Priority (Uplift)</h4>
+          <div style="position:relative;height:240px"><canvas id="chart-actions"></canvas></div>
+        </div>
+
+        <!-- Top Salesman list with bars -->
+        <div class="col-span-4 card p-3">
+          <h4 class="text-xs font-medium text-slate-700 mb-2">Top Salesman (Sales)</h4>
+          <div id="list-salesman" class="space-y-1.5 text-xs"></div>
+        </div>
+
+        <!-- Top Uplift Outlets list -->
+        <div class="col-span-4 card p-3">
+          <h4 class="text-xs font-medium text-slate-700 mb-2">Top Uplift Outlets</h4>
+          <div id="list-uplift" class="space-y-1.5 text-xs"></div>
+        </div>
+
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ============================================================
+       TAB: OUTLETS
+       ============================================================ -->
+  <section id="tab-outlets" class="tab-panel hidden">
+    <div class="card p-4 mb-4 flex items-center gap-3 flex-wrap">
+      <span class="text-xs text-slate-500">Current filter applies. Sort by:</span>
+      <select id="outlet-sort" class="px-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white">
+        <option value="expected_uplift_thb_desc">Uplift (high → low)</option>
+        <option value="sales_desc">Sales (high → low)</option>
+        <option value="day_since_last_sales_desc">Days Since Sale (high → low)</option>
+        <option value="performance_score_asc">Performance Score (low → high)</option>
+        <option value="health_score_asc">Health Score (low → high)</option>
+      </select>
+      <input id="outlet-search" type="text" placeholder="Search shop code or name..."
+             class="px-3 py-1.5 text-sm border border-slate-200 rounded-lg flex-1 max-w-xs">
+      <span class="text-xs text-slate-500 ml-auto" id="outlet-count">—</span>
+    </div>
+    <div class="card overflow-x-auto">
+      <table class="data-table w-full">
+        <thead class="bg-slate-50 border-b border-slate-200">
+          <tr id="outlet-table-head"></tr>
+        </thead>
+        <tbody id="outlet-table-body" class="divide-y divide-slate-100"></tbody>
+      </table>
+    </div>
+    <div class="flex items-center justify-between mt-3 text-sm">
+      <button id="outlet-prev" class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-white disabled:opacity-40">Prev</button>
+      <span id="outlet-page-info" class="text-slate-500"></span>
+      <button id="outlet-next" class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-white disabled:opacity-40">Next</button>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       TAB: ACTIONS
+       ============================================================ -->
+  <section id="tab-actions" class="tab-panel hidden">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div class="card p-5">
+        <h4 class="text-sm font-medium text-slate-900 mb-3">Action Summary</h4>
+        <div id="action-summary" class="space-y-2 text-sm"></div>
+      </div>
+      <div class="card p-5">
+        <h4 class="text-sm font-medium text-slate-900 mb-3">Top 10 Highest Uplift Outlets</h4>
+        <div id="top-uplift-list" class="space-y-1 text-sm"></div>
+      </div>
+    </div>
+    <div class="card p-5">
+      <h4 class="text-sm font-medium text-slate-900 mb-3">Action Plan Details</h4>
+      <div class="overflow-x-auto">
+        <table class="data-table w-full">
+          <thead class="bg-slate-50 border-b border-slate-200">
+            <tr>
+              <th class="text-left px-3 py-2">Shop</th>
+              <th class="text-left px-3 py-2">Salesman</th>
+              <th class="text-left px-3 py-2">Action</th>
+              <th class="num-right px-3 py-2">Uplift (THB)</th>
+              <th class="text-left px-3 py-2">Confidence</th>
+              <th class="num-right px-3 py-2">Perf</th>
+              <th class="num-right px-3 py-2">Health</th>
+            </tr>
+          </thead>
+          <tbody id="action-table-body" class="divide-y divide-slate-100"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       TAB: SETTINGS
+       ============================================================ -->
+  <section id="tab-settings" class="tab-panel hidden">
+    <div class="card p-4 mb-3">
+      <p class="text-sm text-slate-700">
+        ปรับเกณฑ์การให้คะแนน Performance/Health และค่า elasticity ของ Action ได้ที่นี่
+        เมื่อกด <b>Apply</b> ระบบจะ recompute scoring + uplift ทันที (ไม่ต้อง upload ใหม่)
+      </p>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 mb-3">
+
+      <!-- Performance Weights -->
+      <div class="card p-4">
+        <h3 class="font-semibold text-slate-900 mb-1">Performance Scoring (0-100)</h3>
+        <p class="text-xs text-slate-500 mb-3">Outlet ทำสำเร็จแค่ไหน — น้ำหนักรวมต้องเท่ากับ 1.00</p>
+        <div class="space-y-2 text-sm">
+          <div class="flex items-center justify-between gap-2">
+            <label class="flex-1">Value per Outlet (ยอดขาย/ร้าน)</label>
+            <input type="number" min="0" max="1" step="0.05" value="0.40"
+                   class="w-20 px-2 py-1 text-sm border border-slate-200 rounded perf-w" data-key="value_per_outlet">
+          </div>
+          <div class="flex items-center justify-between gap-2">
+            <label class="flex-1">Drop Size (ยอดต่อบิล)</label>
+            <input type="number" min="0" max="1" step="0.05" value="0.35"
+                   class="w-20 px-2 py-1 text-sm border border-slate-200 rounded perf-w" data-key="drop_size">
+          </div>
+          <div class="flex items-center justify-between gap-2">
+            <label class="flex-1">SKU per Outlet (ความหลากหลาย)</label>
+            <input type="number" min="0" max="1" step="0.05" value="0.25"
+                   class="w-20 px-2 py-1 text-sm border border-slate-200 rounded perf-w" data-key="sku_per_outlet">
+          </div>
+        </div>
+        <div class="mt-3 pt-2 border-t border-slate-100 text-xs">
+          Sum: <span id="perf-sum" class="font-semibold">1.00</span>
+          <span id="perf-sum-warn" class="text-rose-500 ml-2 hidden">⚠ ต้อง = 1.00</span>
+        </div>
+      </div>
+
+      <!-- Health Weights -->
+      <div class="card p-4">
+        <h3 class="font-semibold text-slate-900 mb-1">Health Scoring (0-100)</h3>
+        <p class="text-xs text-slate-500 mb-3">Outlet มีสุขภาพดีไหม — น้ำหนักรวมต้องเท่ากับ 1.00</p>
+        <div class="space-y-2 text-sm">
+          <div class="flex items-center justify-between gap-2">
+            <label class="flex-1">Visit Compliance (เยี่ยมครบ F1/F2)</label>
+            <input type="number" min="0" max="1" step="0.05" value="0.30"
+                   class="w-20 px-2 py-1 text-sm border border-slate-200 rounded health-w" data-key="visit_compliance">
+          </div>
+          <div class="flex items-center justify-between gap-2">
+            <label class="flex-1">Strike Rate (เยี่ยม→ขาย)</label>
+            <input type="number" min="0" max="1" step="0.05" value="0.25"
+                   class="w-20 px-2 py-1 text-sm border border-slate-200 rounded health-w" data-key="strike_rate">
+          </div>
+          <div class="flex items-center justify-between gap-2">
+            <label class="flex-1">Time Compliance (วัน/เวลา/นาที)</label>
+            <input type="number" min="0" max="1" step="0.05" value="0.20"
+                   class="w-20 px-2 py-1 text-sm border border-slate-200 rounded health-w" data-key="time_compliance">
+          </div>
+          <div class="flex items-center justify-between gap-2">
+            <label class="flex-1">PFS Score (ดิสเพลย์/POSM)</label>
+            <input type="number" min="0" max="1" step="0.05" value="0.15"
+                   class="w-20 px-2 py-1 text-sm border border-slate-200 rounded health-w" data-key="pfs_score">
+          </div>
+          <div class="flex items-center justify-between gap-2">
+            <label class="flex-1">Recency (วันล่าสุดที่ขาย)</label>
+            <input type="number" min="0" max="1" step="0.05" value="0.10"
+                   class="w-20 px-2 py-1 text-sm border border-slate-200 rounded health-w" data-key="recency">
+          </div>
+        </div>
+        <div class="mt-3 pt-2 border-t border-slate-100 text-xs">
+          Sum: <span id="health-sum" class="font-semibold">1.00</span>
+          <span id="health-sum-warn" class="text-rose-500 ml-2 hidden">⚠ ต้อง = 1.00</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="card p-4 mb-3">
+      <h3 class="font-semibold text-slate-900 mb-1">Action Parameters (Elasticity / Sensitivity)</h3>
+      <p class="text-xs text-slate-500 mb-3">
+        ตัวคูณที่ใช้คำนวณ Uplift Expected — ดูสูตรเต็มใน "Action Logic Reference" ด้านล่าง
+      </p>
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">A01 Promote F1→F2 elasticity</label>
+          <input type="number" min="0" max="1" step="0.05" value="0.30"
+                 class="w-full px-2 py-1 text-sm border border-slate-200 rounded act-param" data-key="A01_elasticity">
+          <div class="text-[10px] text-slate-400 mt-1">Uplift = Sales × (2−1) × this</div>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">A02 Demote F2→F1 elasticity</label>
+          <input type="number" min="-1" max="0" step="0.05" value="-0.10"
+                 class="w-full px-2 py-1 text-sm border border-slate-200 rounded act-param" data-key="A02_elasticity">
+          <div class="text-[10px] text-slate-400 mt-1">Uplift = Sales × this (negative = saving)</div>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">A03 PFS Coaching β</label>
+          <input type="number" min="0" max="1" step="0.05" value="0.20"
+                 class="w-full px-2 py-1 text-sm border border-slate-200 rounded act-param" data-key="A03_beta">
+          <div class="text-[10px] text-slate-400 mt-1">Uplift = Sales × gap_pct × β</div>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">A04 SKU Expansion γ</label>
+          <input type="number" min="0" max="1" step="0.05" value="0.40"
+                 class="w-full px-2 py-1 text-sm border border-slate-200 rounded act-param" data-key="A04_gamma">
+          <div class="text-[10px] text-slate-400 mt-1">Uplift = Sales × gap_pct × γ</div>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">A05 Reactivate days_min</label>
+          <input type="number" min="0" step="5" value="30"
+                 class="w-full px-2 py-1 text-sm border border-slate-200 rounded act-param" data-key="A05_days_min">
+          <div class="text-[10px] text-slate-400 mt-1">เริ่มเข้าเกณฑ์เมื่อขาดขายเกินกี่วัน</div>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">A05 Reactivate days_max</label>
+          <input type="number" min="0" step="5" value="90"
+                 class="w-full px-2 py-1 text-sm border border-slate-200 rounded act-param" data-key="A05_days_max">
+          <div class="text-[10px] text-slate-400 mt-1">เกินวันนี้ ถือว่าหายไป — ไม่เข้าเกณฑ์</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card p-4 mb-3">
+      <h3 class="font-semibold text-slate-900 mb-1">Quadrant Cutpoints</h3>
+      <p class="text-xs text-slate-500 mb-3">
+        เกณฑ์แบ่ง Low / Mid / High ตาม Percentile ภายใน peer group
+      </p>
+      <div class="grid grid-cols-2 gap-3 text-sm">
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">Lower cutoff (Low → Mid)</label>
+          <input type="number" min="0" max="1" step="0.05" value="0.33"
+                 class="w-full px-2 py-1 text-sm border border-slate-200 rounded quad-param" data-key="p_lower">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">Upper cutoff (Mid → High)</label>
+          <input type="number" min="0" max="1" step="0.05" value="0.67"
+                 class="w-full px-2 py-1 text-sm border border-slate-200 rounded quad-param" data-key="p_upper">
+        </div>
+      </div>
+    </div>
+
+    <div class="flex gap-2 mb-6">
+      <button id="btn-apply-settings" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
+        Apply &amp; Recompute
+      </button>
+      <button id="btn-reset-settings" class="px-4 py-2 border border-slate-200 text-sm rounded-lg hover:bg-white">
+        Reset to Defaults
+      </button>
+    </div>
+
+    <!-- Action Logic Reference -->
+    <div class="card p-4">
+      <h3 class="font-semibold text-slate-900 mb-3">Action Logic Reference</h3>
+      <div class="overflow-x-auto">
+        <table class="data-table w-full text-xs">
+          <thead class="bg-slate-50 border-b border-slate-200">
+            <tr>
+              <th class="text-left px-2 py-2">Code</th>
+              <th class="text-left px-2 py-2">Name</th>
+              <th class="text-left px-2 py-2">Eligibility (ต้องผ่านทุกข้อ)</th>
+              <th class="text-left px-2 py-2">Uplift Formula</th>
+              <th class="text-left px-2 py-2">Confidence</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 align-top">
+            <tr>
+              <td class="px-2 py-2 font-mono">A02</td>
+              <td class="px-2 py-2">Demote F2→F1</td>
+              <td class="px-2 py-2">F=F2 · Compliance≥0.8 · Drop<½peer · Drop>0</td>
+              <td class="px-2 py-2 font-mono">Sales × −0.10</td>
+              <td class="px-2 py-2"><span class="badge b-green">High</span></td>
+            </tr>
+            <tr>
+              <td class="px-2 py-2 font-mono">A05</td>
+              <td class="px-2 py-2">Reactivate</td>
+              <td class="px-2 py-2">Active=0 · 30≤days_since_sales≤90</td>
+              <td class="px-2 py-2 font-mono">Peer median Value/Outlet</td>
+              <td class="px-2 py-2"><span class="badge b-slate">Low</span></td>
+            </tr>
+            <tr>
+              <td class="px-2 py-2 font-mono">A01</td>
+              <td class="px-2 py-2">Promote F1→F2</td>
+              <td class="px-2 py-2">F=F1 · Extra calls≥1 · Strike≥0.30</td>
+              <td class="px-2 py-2 font-mono">Sales × 1.0 × 0.30</td>
+              <td class="px-2 py-2"><span class="badge b-amber">Medium</span></td>
+            </tr>
+            <tr>
+              <td class="px-2 py-2 font-mono">A06</td>
+              <td class="px-2 py-2">Strike Rate Recovery</td>
+              <td class="px-2 py-2">Visits≥2 · Strike < peer median</td>
+              <td class="px-2 py-2 font-mono">VisitCount × Gap × DropSize</td>
+              <td class="px-2 py-2"><span class="badge b-amber">Medium</span></td>
+            </tr>
+            <tr>
+              <td class="px-2 py-2 font-mono">A03</td>
+              <td class="px-2 py-2">PFS Coaching</td>
+              <td class="px-2 py-2">Active=1 · PFS < peer median</td>
+              <td class="px-2 py-2 font-mono">Sales × (peer−PFS)/PFS × 0.20</td>
+              <td class="px-2 py-2"><span class="badge b-amber">Medium</span></td>
+            </tr>
+            <tr>
+              <td class="px-2 py-2 font-mono">A04</td>
+              <td class="px-2 py-2">SKU Expansion</td>
+              <td class="px-2 py-2">Active=1 · SKU < peer median</td>
+              <td class="px-2 py-2 font-mono">Sales × (peer−SKU)/SKU × 0.40</td>
+              <td class="px-2 py-2"><span class="badge b-slate">Low</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="text-[11px] text-slate-500 mt-3">
+        ลำดับเช็คเรียงจากบนลงล่าง — outlet เข้าเกณฑ์ตัวแรกก่อน → ได้ action นั้น (skip ตัวที่เหลือ).
+        Confidence สะท้อนความมั่นใจในตัวเลข uplift ที่คำนวณ — ใช้เพื่อจัดลำดับการลงทุน
+      </p>
+    </div>
+
+  </section>
+  <section id="tab-trend" class="tab-panel hidden">
+    <div class="card p-4 mb-4 flex items-center gap-3">
+      <span class="text-xs text-slate-500">Roll-up level:</span>
+      <select id="trend-level" class="px-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white">
+        <option value="dc">DC</option>
+        <option value="channel">Channel × DC</option>
+        <option value="salesman" selected>Salesman × DC</option>
+      </select>
+    </div>
+    <div class="card overflow-x-auto">
+      <table class="data-table w-full text-xs">
+        <thead class="bg-slate-50 border-b border-slate-200">
+          <tr id="trend-table-head"></tr>
+        </thead>
+        <tbody id="trend-table-body" class="divide-y divide-slate-100"></tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+
+<!-- ============================================================
+     LIBRARIES + CORE LOGIC
+     Loaded as deferred scripts below to keep HTML clean.
+     All code is plain JS — no build step needed.
+     ============================================================ -->
+
+<!-- Embedded demo data (DC 302) -->
+<script id="demo-data" type="application/json"></script>
+
+<script>
+// =====================================================
+// SALES ANALYTICS - APP STATE & CORE ENGINE
+// =====================================================
+// All logic ports the Python pipeline (verified against
+// reference dashboard) to vanilla JS. No build step.
+
+const APP = {
+  // In-memory store of loaded DC datasets
+  // { dc_code: { rows: [...fact_outlet_monthly...], months: [...], processed_at, n_outlets } }
+  data: {},
+  // Filter state
+  filter: { dc: '', channel: '', salesman: '', month: '' },
+  // Charts
+  charts: {},
+  // Outlet pagination
+  outletPage: 0,
+  outletPageSize: 50,
+  // Staged files awaiting processing
+  staged: [],
+};
+
+// ============================================================
+// CONFIG (mirror of Python config.yaml)
+// ============================================================
+const CONFIG = {
+  channel_map: { 'PreSales': 'Presales', 'CreditSales': 'Credit' },
+  time_compliance: { tc2_start: 8, tc2_end: 17, tc3_min_min: 5 },
+  active_def: { exclude_status: ['Credit Note'] },
+  baseline: { self_trailing: 3, top_q: 0.75 },
+  scoring: {
+    perf_w: { value_per_outlet: 0.40, drop_size: 0.35, sku_per_outlet: 0.25 },
+    health_w: { visit_compliance: 0.30, strike_rate: 0.25, time_compliance: 0.20, pfs_score: 0.15, recency: 0.10 },
+  },
+  actions: {
+    A01_promote_f1_to_f2: { name: 'Promote F1 → F2', elasticity: 0.30, confidence: 'Medium' },
+    A02_demote_f2_to_f1:  { name: 'Demote F2 → F1', elasticity: -0.10, confidence: 'High' },
+    A03_pfs_coaching:     { name: 'PFS Coaching to Peer Median', beta: 0.20, confidence: 'Medium' },
+    A04_sku_expansion:    { name: 'SKU Range Expansion', gamma: 0.40, confidence: 'Low' },
+    A05_reactivate:       { name: 'Reactivate Inactive Shop', confidence: 'Low' },
+    A06_strike_rate_recovery: { name: 'Strike Rate Recovery', confidence: 'Medium' },
+  },
+  action_priority: [
+    'A02_demote_f2_to_f1', 'A05_reactivate', 'A01_promote_f1_to_f2',
+    'A06_strike_rate_recovery', 'A03_pfs_coaching', 'A04_sku_expansion'
+  ],
+  default_f: 'F1',
+};
+
+// ============================================================
+// HELPERS
+// ============================================================
+const Fmt = {
+  num: n => n == null || isNaN(n) ? '—' : Math.round(n).toLocaleString(),
+  num1: n => n == null || isNaN(n) ? '—' : n.toFixed(1),
+  pct: n => n == null || isNaN(n) ? '—' : (n * 100).toFixed(1) + '%',
+  money: n => n == null || isNaN(n) ? '—' : '฿' + Math.round(n).toLocaleString(),
+  signed: n => n == null || isNaN(n) ? '—' : (n >= 0 ? '+' : '') + n.toFixed(1) + '%',
+};
+
+function parseThaiDate(v) {
+  if (!v) return null;
+  if (v instanceof Date) return v;
+  // Excel serial date number
+  if (typeof v === 'number') {
+    // Excel epoch: 1899-12-30 (because of Lotus 1-2-3 bug)
+    return new Date((v - 25569) * 86400 * 1000);
+  }
+  const s = String(v).trim();
+  // DD/MM/YYYY
+  const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (m) {
+    return new Date(parseInt(m[3]), parseInt(m[2]) - 1, parseInt(m[1]));
+  }
+  // YYYY-MM-DD
+  const m2 = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m2) {
+    return new Date(parseInt(m2[1]), parseInt(m2[2]) - 1, parseInt(m2[3]));
+  }
+  return null;
+}
+
+function toMonthStr(d) {
+  if (!d) return null;
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  return `${y}-${m}`;
+}
+
+function parseTimeToHour(t) {
+  if (t == null) return null;
+  const s = String(t).replace(/\./g, ':');
+  const parts = s.split(':');
+  if (parts.length < 2) return null;
+  const h = parseInt(parts[0]);
+  const m = parseInt(parts[1]);
+  if (isNaN(h) || isNaN(m)) return null;
+  return h + m / 60;
+}
+
+// Group by single or composite key, return Map(key -> rows)
+function groupBy(rows, keyFn) {
+  const m = new Map();
+  for (const r of rows) {
+    const k = keyFn(r);
+    if (!m.has(k)) m.set(k, []);
+    m.get(k).push(r);
+  }
+  return m;
+}
+
+// Distinct values
+function uniq(arr) {
+  return [...new Set(arr)];
+}
+
+// Percentile rank within group (0-1)
+function percentileRank(values) {
+  // For ties, use average rank method
+  const indexed = values.map((v, i) => ({ v, i }));
+  indexed.sort((a, b) => (a.v == null ? -Infinity : a.v) - (b.v == null ? -Infinity : b.v));
+  const ranks = new Array(values.length);
+  let i = 0;
+  while (i < indexed.length) {
+    let j = i;
+    while (j + 1 < indexed.length && indexed[j + 1].v === indexed[i].v) j++;
+    const avgRank = (i + j + 2) / 2; // 1-indexed avg
+    for (let k = i; k <= j; k++) ranks[indexed[k].i] = avgRank;
+    i = j + 1;
+  }
+  return ranks.map(r => (r - 0.5) / values.length); // 0-1 normalized
+}
+
+function median(arr) {
+  const filtered = arr.filter(x => x != null && !isNaN(x)).sort((a, b) => a - b);
+  if (filtered.length === 0) return null;
+  const mid = Math.floor(filtered.length / 2);
+  return filtered.length % 2 ? filtered[mid] : (filtered[mid - 1] + filtered[mid]) / 2;
+}
+
+function quantile(arr, q) {
+  const filtered = arr.filter(x => x != null && !isNaN(x)).sort((a, b) => a - b);
+  if (filtered.length === 0) return null;
+  const pos = (filtered.length - 1) * q;
+  const lo = Math.floor(pos), hi = Math.ceil(pos);
+  if (lo === hi) return filtered[lo];
+  return filtered[lo] + (filtered[hi] - filtered[lo]) * (pos - lo);
+}
+
+function sum(arr) { return arr.reduce((s, x) => s + (x || 0), 0); }
+function mean(arr) {
+  const valid = arr.filter(x => x != null && !isNaN(x));
+  return valid.length === 0 ? null : sum(valid) / valid.length;
+}
+
+// ============================================================
+// FILE LOADING & PARSING
+// ============================================================
+function classifyFile(file) {
+  // Detect file type from name
+  const n = file.name.toLowerCase();
+  if (n.includes('sellout')) return 'sellout';
+  if (n.includes('hh_transaction') || n.includes('hh transaction')) return 'hh';
+  if (n.includes('scoreach')) return 'pfs';
+  return 'unknown';
+}
+
+async function readWorkbook(file) {
+  const buf = await file.arrayBuffer();
+  return XLSX.read(buf, { type: 'array', cellDates: false });
+}
+
+function sheetToJson(wb) {
+  const sheet = wb.Sheets[wb.SheetNames[0]];
+  return XLSX.utils.sheet_to_json(sheet, { defval: null });
+}
+
+// ============================================================
+// NORMALIZE LOADED DATA
+// ============================================================
+function normSellout(rows) {
+  return rows.map(r => ({
+    dc_code: String(r['Distributor Code'] ?? ''),
+    salesman_code: r['Salesman Code'],
+    salesman_type: r['Salesman Type'],
+    customer_code: String(r['Customer Code'] ?? ''),
+    customer_name: r['Customer Name'],
+    shop_type_sellout: r['Shop Type Desc'],
+    invoice_number: r['Invoice Number'],
+    invoice_status: r['Invoice  Status'] ?? r['Invoice Status'],
+    invoice_net_amount: Number(r['Invoice Net Amount']) || 0,
+    delivery_status: r['Delivery Status'],
+    delivery_qty_ea: Number(r['Delivery Total  QTY EA'] ?? r['Delivery Total QTY EA']) || 0,
+    product_code: r['SO Product Code'],
+    kpi_date: parseThaiDate(r['KPI Date']),
+  })).filter(r => r.customer_code && r.kpi_date);
+}
+
+function normHH(rows) {
+  return rows.map(r => {
+    const vt = r['Visit Type'] || '';
+    return {
+      dc_code: String(r['Distributor Code'] ?? ''),
+      salesman_code: r['Route Code'],
+      route_name: r['Route Name'],
+      customer_code: String(r['Customer Code'] ?? ''),
+      visit_date: parseThaiDate(r['Visit Date']),
+      time_in_hour: parseTimeToHour(r['Time In']),
+      time_spent: Number(r['Time Spent']) || 0,
+      visit_type: vt,
+      on_plan: r['On Plan'],
+      successful_visit: r['Successful Visit'],
+      on_plan_yes: r['On Plan'] === 'Yes' ? 1 : 0,
+      successful_yes: r['Successful Visit'] === 'Yes' ? 1 : 0,
+      extra_call: /extra/i.test(vt) ? 1 : 0,
+      is_planned_executed: (r['On Plan'] === 'Yes' && !/Miss Call/i.test(vt) && !/No activity/i.test(vt)) ? 1 : 0,
+    };
+  }).filter(r => r.customer_code && r.visit_date);
+}
+
+function normPFS(rows) {
+  return rows.map(r => {
+    const monthRaw = String(r['Month'] || '');
+    let auditMonth = null;
+    const m = monthRaw.match(/(\d{4})_(\d{2})/);
+    if (m) auditMonth = `${m[1]}-${m[2]}`;
+    return {
+      dc_code: String(r['DCID'] ?? ''),
+      customer_code: String(r['ShopID'] ?? ''),
+      shop_name_pfs: r['ShopName'],
+      shop_segment: r['ShopSegment'],
+      shop_type: r['ShopTypes'],
+      rsm: r['RSM'],
+      asm: r['ASM'],
+      pfs_sales_type: r['Sales Type'],
+      frequency_planned: r['Frequency'],
+      audit_status: r['AuditStatus'],
+      pfs_score: Number(r['PFS Score']),
+      pfs_hero_stock: Number(r['Hero Stock Availability']),
+      pfs_price_tag: Number(r['Price Tag']),
+      pfs_merch: Number(r['Merchandising']),
+      pfs_posm: Number(r['POSM']),
+      pfs_2nd_display: Number(r['2nd Display']),
+      audit_month: auditMonth,
+    };
+  }).filter(r => r.customer_code && r.audit_month);
+}
+
+// ============================================================
+// KPI ENGINE — full port of Python pipeline
+// ============================================================
+async function buildOutletMonthly(sellout, hh, pfs, progressFn) {
+  progressFn('Computing sales KPIs...', 35);
+  await sleep(10);
+
+  // --- Per (customer × kpi_month) Sales aggregates ---
+  // 1 row = 1 SKU-Invoice line. Group by (customer, month).
+  const salesMap = new Map();
+  for (const r of sellout) {
+    const month = toMonthStr(r.kpi_date);
+    const key = `${r.customer_code}|${month}`;
+    if (!salesMap.has(key)) {
+      salesMap.set(key, {
+        dc_code: r.dc_code,
+        customer_code: r.customer_code,
+        kpi_month: month,
+        sales: 0,                    // NET (Invoiced + CN, CN already negative)
+        invoice_set: new Set(),      // all distinct invoice numbers
+        delivered_skus: new Set(),
+        last_sales_date: null,
+      });
+    }
+    const rec = salesMap.get(key);
+    rec.sales += r.invoice_net_amount;
+    if (r.invoice_number != null) rec.invoice_set.add(r.invoice_number);
+    if (r.invoice_status === 'Invoiced' && r.delivery_status === 'Confirm' && r.delivery_qty_ea > 0 && r.product_code) {
+      rec.delivered_skus.add(r.product_code);
+    }
+    if (!rec.last_sales_date || r.kpi_date > rec.last_sales_date) rec.last_sales_date = r.kpi_date;
+  }
+  const salesArr = [];
+  for (const v of salesMap.values()) {
+    v.n_invoices = v.invoice_set.size;
+    v.sku_per_outlet = v.delivered_skus.size;
+    v.drop_size = v.n_invoices > 0 ? v.sales / v.n_invoices : 0;
+    v.active = v.sales > 0 ? 1 : 0;
+    delete v.invoice_set;
+    delete v.delivered_skus;
+    salesArr.push(v);
+  }
+
+  progressFn('Computing visit KPIs...', 50);
+  await sleep(10);
+
+  // --- Per (customer × visit_month) HH aggregates ---
+  const visitMap = new Map();
+  for (const r of hh) {
+    const month = toMonthStr(r.visit_date);
+    const key = `${r.customer_code}|${month}`;
+    if (!visitMap.has(key)) {
+      visitMap.set(key, {
+        dc_code: r.dc_code,
+        customer_code: r.customer_code,
+        kpi_month: month,
+        visit_count: 0, visit_onplan_count: 0, visit_planned_count: 0,
+        visit_extra_count: 0, visit_successful_count: 0,
+        tc2_ok: 0, tc3_ok: 0,
+        salesman_codes: new Map(),
+      });
+    }
+    const rec = visitMap.get(key);
+    rec.visit_count++;
+    rec.visit_onplan_count += r.on_plan_yes;
+    rec.visit_planned_count += r.is_planned_executed;
+    rec.visit_extra_count += r.extra_call;
+    rec.visit_successful_count += r.successful_yes;
+    if (r.time_in_hour != null && r.time_in_hour >= CONFIG.time_compliance.tc2_start &&
+        r.time_in_hour < CONFIG.time_compliance.tc2_end) rec.tc2_ok++;
+    if (r.time_spent >= CONFIG.time_compliance.tc3_min_min) rec.tc3_ok++;
+    // Most common salesman per outlet-month
+    const sc = r.salesman_code;
+    if (sc) rec.salesman_codes.set(sc, (rec.salesman_codes.get(sc) || 0) + 1);
+  }
+  const visitArr = [];
+  for (const v of visitMap.values()) {
+    v.strike_rate = v.visit_count > 0 ? v.visit_successful_count / v.visit_count : 0;
+    v.extra_pct = v.visit_planned_count > 0 ? v.visit_extra_count / v.visit_planned_count : 0;
+    v.tc1_pct = v.visit_count > 0 ? v.visit_onplan_count / v.visit_count : 0;
+    v.tc2_pct = v.visit_count > 0 ? v.tc2_ok / v.visit_count : 0;
+    v.tc3_pct = v.visit_count > 0 ? v.tc3_ok / v.visit_count : 0;
+    v.tc_avg = (v.tc1_pct + v.tc2_pct + v.tc3_pct) / 3;
+    // Best salesman
+    let best = null, bestN = 0;
+    for (const [sc, n] of v.salesman_codes) if (n > bestN) { best = sc; bestN = n; }
+    v.visit_salesman_code = best;
+    delete v.salesman_codes;
+    delete v.tc2_ok; delete v.tc3_ok;
+    visitArr.push(v);
+  }
+
+  progressFn('Computing PFS KPIs...', 60);
+  await sleep(10);
+
+  // --- Per (customer × audit_month) PFS aggregates (SUBMIT only) ---
+  const pfsMap = new Map();
+  for (const r of pfs) {
+    if (r.audit_status !== 'SUBMIT') continue;
+    const key = `${r.customer_code}|${r.audit_month}`;
+    if (!pfsMap.has(key)) {
+      pfsMap.set(key, {
+        dc_code: r.dc_code, customer_code: r.customer_code, kpi_month: r.audit_month,
+        pfs_scores: [], hero: [], price: [], merch: [], posm: [], display: [],
+        f_pfs: r.frequency_planned, audit_count: 0,
+      });
+    }
+    const rec = pfsMap.get(key);
+    if (!isNaN(r.pfs_score)) rec.pfs_scores.push(r.pfs_score);
+    if (!isNaN(r.pfs_hero_stock)) rec.hero.push(r.pfs_hero_stock);
+    if (!isNaN(r.pfs_price_tag)) rec.price.push(r.pfs_price_tag);
+    if (!isNaN(r.pfs_merch)) rec.merch.push(r.pfs_merch);
+    if (!isNaN(r.pfs_posm)) rec.posm.push(r.pfs_posm);
+    if (!isNaN(r.pfs_2nd_display)) rec.display.push(r.pfs_2nd_display);
+    rec.audit_count++;
+  }
+  const pfsArr = [];
+  for (const v of pfsMap.values()) {
+    v.pfs_score = mean(v.pfs_scores);
+    v.pfs_hero_stock = mean(v.hero);
+    v.pfs_price_tag = mean(v.price);
+    v.pfs_merch = mean(v.merch);
+    v.pfs_posm = mean(v.posm);
+    v.pfs_2nd_display = mean(v.display);
+    delete v.pfs_scores; delete v.hero; delete v.price; delete v.merch; delete v.posm; delete v.display;
+    pfsArr.push(v);
+  }
+
+  progressFn('Merging customer-month spine...', 70);
+  await sleep(10);
+
+  // --- Spine: all (customer, month) seen anywhere ---
+  const spineKeys = new Set();
+  for (const r of salesArr) spineKeys.add(`${r.customer_code}|${r.kpi_month}`);
+  for (const r of visitArr) spineKeys.add(`${r.customer_code}|${r.kpi_month}`);
+  for (const r of pfsArr)   spineKeys.add(`${r.customer_code}|${r.kpi_month}`);
+
+  const salesIdx = new Map(salesArr.map(r => [`${r.customer_code}|${r.kpi_month}`, r]));
+  const visitIdx = new Map(visitArr.map(r => [`${r.customer_code}|${r.kpi_month}`, r]));
+  const pfsIdx   = new Map(pfsArr.map(r => [`${r.customer_code}|${r.kpi_month}`, r]));
+
+  const fact = [];
+  for (const key of spineKeys) {
+    const [customer_code, kpi_month] = key.split('|');
+    const s = salesIdx.get(key) || {};
+    const v = visitIdx.get(key) || {};
+    const p = pfsIdx.get(key) || {};
+    fact.push({
+      customer_code,
+      kpi_month,
+      dc_code: s.dc_code || v.dc_code || p.dc_code,
+      sales: s.sales || 0,
+      active: s.active || 0,
+      n_invoices: s.n_invoices || 0,
+      drop_size: s.drop_size || 0,
+      sku_per_outlet: s.sku_per_outlet || 0,
+      last_sales_date: s.last_sales_date || null,
+      visit_count: v.visit_count || 0,
+      visit_onplan_count: v.visit_onplan_count || 0,
+      visit_planned_count: v.visit_planned_count || 0,
+      visit_extra_count: v.visit_extra_count || 0,
+      visit_successful_count: v.visit_successful_count || 0,
+      strike_rate: v.strike_rate ?? null,
+      extra_pct: v.extra_pct ?? null,
+      tc1_pct: v.tc1_pct ?? null,
+      tc2_pct: v.tc2_pct ?? null,
+      tc3_pct: v.tc3_pct ?? null,
+      tc_avg: v.tc_avg ?? null,
+      pfs_score: p.pfs_score ?? null,
+      f_pfs: p.f_pfs ?? null,
+      visit_salesman_code: v.visit_salesman_code,
+    });
+  }
+
+  // --- Build outlet master attributes (PFS dominant for segment/RSM/ASM) ---
+  const outletAttr = new Map();
+  // Salesman code from sellout (canonical) or HH
+  for (const r of sellout) {
+    if (!outletAttr.has(r.customer_code)) outletAttr.set(r.customer_code, {});
+    const a = outletAttr.get(r.customer_code);
+    if (r.salesman_code && !a.salesman_code) a.salesman_code = r.salesman_code;
+    if (r.salesman_type && !a.salesman_type) a.salesman_type = r.salesman_type;
+    if (r.customer_name && !a.shop_name) a.shop_name = r.customer_name;
+  }
+  for (const r of hh) {
+    if (!outletAttr.has(r.customer_code)) outletAttr.set(r.customer_code, {});
+    const a = outletAttr.get(r.customer_code);
+    if (!a.salesman_code && r.salesman_code) a.salesman_code = r.salesman_code;
+  }
+  // PFS attributes (most recent)
+  const pfsByCust = groupBy(pfs.filter(r => r.audit_status === 'SUBMIT'), r => r.customer_code);
+  for (const [cust, rows] of pfsByCust) {
+    rows.sort((a, b) => (a.audit_month || '').localeCompare(b.audit_month || ''));
+    const last = rows[rows.length - 1];
+    if (!outletAttr.has(cust)) outletAttr.set(cust, {});
+    const a = outletAttr.get(cust);
+    a.shop_segment = last.shop_segment;
+    a.shop_type = last.shop_type;
+    a.rsm = last.rsm;
+    a.asm = last.asm;
+    a.pfs_sales_type = last.pfs_sales_type;
+    if (!a.shop_name) a.shop_name = last.shop_name_pfs;
+  }
+  // Apply to fact
+  for (const r of fact) {
+    const a = outletAttr.get(r.customer_code) || {};
+    r.shop_name = a.shop_name || '(no name)';
+    r.shop_segment = a.shop_segment || null;
+    r.shop_type = a.shop_type || null;
+    r.rsm = a.rsm || null;
+    r.asm = a.asm || null;
+    r.salesman_code = a.salesman_code || r.visit_salesman_code || null;
+    // Channel mapping
+    if (a.salesman_type && CONFIG.channel_map[a.salesman_type]) {
+      r.channel = CONFIG.channel_map[a.salesman_type];
+    } else if (a.pfs_sales_type === 'PS Route') r.channel = 'Presales';
+    else if (a.pfs_sales_type === 'CR Route') r.channel = 'Credit';
+    else r.channel = 'Other';
+    r.value_per_outlet = r.sales;  // at row level
+  }
+
+  progressFn('Resolving F1/F2 frequency...', 78);
+  await sleep(10);
+
+  // --- F1/F2 fallback chain ---
+  // 1. PFS current month  → 2. PFS carry forward  → 3. HH onplan derived  → 4. F1
+  // Pre-compute HH onplan-derived freq per (customer, month)
+  const hhFreqMap = new Map();
+  const hhPerCust = groupBy(hh, r => r.customer_code);
+  for (const [cust, rows] of hhPerCust) {
+    const byMonth = groupBy(rows, r => toMonthStr(r.visit_date));
+    for (const [mo, mrows] of byMonth) {
+      const onplanCount = sum(mrows.map(r => r.on_plan_yes));
+      const f = onplanCount >= 2 ? 'F2' : (onplanCount === 1 ? 'F1' : null);
+      if (f) hhFreqMap.set(`${cust}|${mo}`, f);
+    }
+  }
+  // Sort fact by customer, month
+  fact.sort((a, b) => a.customer_code.localeCompare(b.customer_code) ||
+                       a.kpi_month.localeCompare(b.kpi_month));
+  // Carry forward
+  let lastFByCust = new Map();
+  for (const r of fact) {
+    // 1. PFS current
+    if (r.f_pfs) {
+      r.f_planned = r.f_pfs;
+      r.f_source = '1_pfs_current';
+      lastFByCust.set(r.customer_code, r.f_pfs);
+    } else if (lastFByCust.has(r.customer_code)) {
+      r.f_planned = lastFByCust.get(r.customer_code);
+      r.f_source = '2_pfs_carry_forward';
+    } else if (hhFreqMap.has(`${r.customer_code}|${r.kpi_month}`)) {
+      r.f_planned = hhFreqMap.get(`${r.customer_code}|${r.kpi_month}`);
+      r.f_source = '3_hh_derived';
+    } else {
+      r.f_planned = CONFIG.default_f;
+      r.f_source = '4_default';
+    }
+    r.f_planned_n = r.f_planned === 'F2' ? 2 : 1;
+    r.visit_compliance = Math.min(r.visit_onplan_count / r.f_planned_n, 1.0);
+  }
+
+  // --- Day Since Last Sales: global last NET-positive sales date per customer ---
+  const dailyNet = new Map(); // customer|date → daily net
+  for (const r of sellout) {
+    const dkey = `${r.customer_code}|${r.kpi_date.getTime()}`;
+    dailyNet.set(dkey, (dailyNet.get(dkey) || 0) + r.invoice_net_amount);
+  }
+  const globalLast = new Map();
+  for (const [key, net] of dailyNet) {
+    if (net > 0) {
+      const [cust, ts] = key.split('|');
+      const t = parseInt(ts);
+      if (!globalLast.has(cust) || globalLast.get(cust) < t) globalLast.set(cust, t);
+    }
+  }
+  // As-of = max kpi_date in sellout
+  let asOf = 0;
+  for (const r of sellout) if (r.kpi_date.getTime() > asOf) asOf = r.kpi_date.getTime();
+  for (const r of fact) {
+    const last = globalLast.get(r.customer_code);
+    r.day_since_last_sales = last ? Math.round((asOf - last) / (86400 * 1000)) : 9999;
+  }
+
+  progressFn('Computing baselines + time comparisons...', 84);
+  await sleep(10);
+
+  // --- Baselines (B1 Self trailing 3M, B2 Peer median, B3 Peer P75) ---
+  const KEY_METRICS = ['sales', 'drop_size', 'sku_per_outlet', 'strike_rate', 'tc_avg', 'pfs_score', 'visit_compliance'];
+
+  // B1 Self trailing 3M
+  const factByCust = groupBy(fact, r => r.customer_code);
+  for (const [cust, rows] of factByCust) {
+    rows.sort((a, b) => a.kpi_month.localeCompare(b.kpi_month));
+    for (let i = 0; i < rows.length; i++) {
+      for (const m of KEY_METRICS) {
+        const back = rows.slice(Math.max(0, i - 3), i).map(r => r[m]).filter(x => x != null);
+        rows[i][m + '_b1_self'] = back.length > 0 ? mean(back) : null;
+        const b1 = rows[i][m + '_b1_self'];
+        rows[i][m + '_vs_b1_pct'] = (b1 != null && b1 > 0) ? (rows[i][m] - b1) / b1 * 100 : null;
+      }
+      // MoM
+      const prev = i > 0 ? rows[i - 1] : null;
+      for (const m of ['sales', 'active', 'n_invoices', 'visit_count']) {
+        const pv = prev ? prev[m] : null;
+        rows[i][m + '_mom_prev'] = pv;
+        rows[i][m + '_mom_pct'] = (pv != null && pv > 0) ? (rows[i][m] - pv) / pv * 100 : null;
+      }
+      // YOY (12 months back)
+      const prev12 = i >= 12 ? rows[i - 12] : null;
+      for (const m of ['sales']) {
+        const pv = prev12 ? prev12[m] : null;
+        rows[i][m + '_yoy_pct'] = (pv != null && pv > 0) ? (rows[i][m] - pv) / pv * 100 : null;
+      }
+      // YTD: cumsum within same year
+      const y = rows[i].kpi_month.slice(0, 4);
+      let ytd = 0;
+      for (let j = 0; j <= i; j++) {
+        if (rows[j].kpi_month.slice(0, 4) === y) ytd += (rows[j].sales || 0);
+      }
+      rows[i].sales_ytd = ytd;
+    }
+  }
+
+  // B2/B3 within peer (DC × Channel × ShopSegment × Month)
+  const peerKey = r => `${r.dc_code}|${r.channel}|${r.shop_segment}|${r.kpi_month}`;
+  const peerGroups = groupBy(fact, peerKey);
+  for (const [k, rows] of peerGroups) {
+    for (const m of KEY_METRICS) {
+      const vals = rows.map(r => r[m]);
+      const med = median(vals);
+      const p75 = quantile(vals, CONFIG.baseline.top_q);
+      for (const r of rows) {
+        r[m + '_b2_peer'] = med;
+        r[m + '_b3_p75'] = p75;
+        r[m + '_vs_b2_pct'] = (med != null && med > 0) ? (r[m] - med) / med * 100 : null;
+        r[m + '_gap_to_b3'] = (p75 != null) ? p75 - r[m] : null;
+      }
+    }
+  }
+
+  progressFn('Scoring outlets...', 90);
+  await sleep(10);
+
+  // --- Scoring (percentile rank within peer × month) ---
+  for (const [k, rows] of peerGroups) {
+    // Performance components
+    const perfMetrics = ['value_per_outlet', 'drop_size', 'sku_per_outlet'];
+    const perfRanks = {};
+    for (const m of perfMetrics) perfRanks[m] = percentileRank(rows.map(r => r[m] || 0));
+    const pw = CONFIG.scoring.perf_w;
+    for (let i = 0; i < rows.length; i++) {
+      let pscore = 0;
+      for (const m of perfMetrics) pscore += perfRanks[m][i] * 100 * pw[m];
+      rows[i].performance_score = Math.round(pscore * 10) / 10;
+    }
+    // Health components (already 0-1 ratios → ×100)
+    const hw = CONFIG.scoring.health_w;
+    for (const r of rows) {
+      const recency = Math.max(0, 90 - Math.min(90, r.day_since_last_sales || 90)) / 90 * 100;
+      const hscore = (r.visit_compliance || 0) * 100 * hw.visit_compliance +
+                     (r.strike_rate || 0) * 100 * hw.strike_rate +
+                     (r.tc_avg || 0) * 100 * hw.time_compliance +
+                     (r.pfs_score || 0) * hw.pfs_score +
+                     recency * hw.recency;
+      r.health_score = Math.round(hscore * 10) / 10;
+    }
+    // Bands within peer (P33, P67 cutpoints)
+    const perfP33 = quantile(rows.map(r => r.performance_score), 0.33);
+    const perfP67 = quantile(rows.map(r => r.performance_score), 0.67);
+    const healthP33 = quantile(rows.map(r => r.health_score), 0.33);
+    const healthP67 = quantile(rows.map(r => r.health_score), 0.67);
+    for (const r of rows) {
+      r.perf_band = r.performance_score <= perfP33 ? 'Low' : (r.performance_score >= perfP67 ? 'High' : 'Mid');
+      r.health_band = r.health_score <= healthP33 ? 'Low' : (r.health_score >= healthP67 ? 'High' : 'Mid');
+      r.quadrant = r.perf_band + 'P_' + r.health_band + 'H';
+    }
+  }
+
+  progressFn('Assigning actions + uplift...', 95);
+  await sleep(10);
+
+  // --- Action assignment + uplift ---
+  // Need peer medians for sku/pfs/strike eligibility
+  for (const [k, rows] of peerGroups) {
+    const skuMed = median(rows.map(r => r.sku_per_outlet || 0));
+    const pfsMed = median(rows.map(r => r.pfs_score).filter(x => x != null));
+    const strikeMed = median(rows.map(r => r.strike_rate).filter(x => x != null));
+    const valueMed = median(rows.map(r => r.value_per_outlet).filter(x => x > 0));
+    const dropB2 = median(rows.map(r => r.drop_size).filter(x => x > 0));
+    for (const r of rows) {
+      r.sku_peer_median = skuMed;
+      r.pfs_peer_median = pfsMed;
+      r.strike_peer_median = strikeMed;
+      r.value_peer_median = valueMed || 0;
+      r._drop_b2 = dropB2 || 0;
+    }
+  }
+
+  for (const r of fact) {
+    r.primary_action = 'A00_no_action';
+    r.action_reason = '';
+    r.expected_uplift_thb = 0;
+    r.uplift_confidence = '—';
+
+    for (const code of CONFIG.action_priority) {
+      let eligible = false;
+      if (code === 'A02_demote_f2_to_f1') {
+        eligible = r.f_planned === 'F2' && r.visit_compliance >= 0.8 &&
+                   r.drop_size < r._drop_b2 * 0.5 && r.drop_size > 0;
+      } else if (code === 'A05_reactivate') {
+        eligible = r.active === 0 && r.day_since_last_sales >= 30 && r.day_since_last_sales <= 90;
+      } else if (code === 'A01_promote_f1_to_f2') {
+        eligible = r.f_planned === 'F1' && r.visit_extra_count >= 1 && (r.strike_rate || 0) >= 0.30;
+      } else if (code === 'A06_strike_rate_recovery') {
+        eligible = r.strike_peer_median > 0 && (r.strike_rate || 0) < r.strike_peer_median &&
+                   r.visit_count >= 2;
+      } else if (code === 'A03_pfs_coaching') {
+        eligible = r.pfs_peer_median > 0 && (r.pfs_score || 0) < r.pfs_peer_median && r.active === 1;
+      } else if (code === 'A04_sku_expansion') {
+        eligible = r.sku_peer_median > 0 && (r.sku_per_outlet || 0) < r.sku_peer_median && r.active === 1;
+      }
+      if (eligible) {
+        r.primary_action = code;
+        r.action_reason = CONFIG.actions[code].name;
+        r.uplift_confidence = CONFIG.actions[code].confidence;
+        break;
+      }
+    }
+
+    // Uplift formulas
+    const ac = r.primary_action;
+    if (ac === 'A01_promote_f1_to_f2') {
+      r.expected_uplift_thb = r.sales * (2 / 1 - 1) * CONFIG.actions.A01_promote_f1_to_f2.elasticity;
+    } else if (ac === 'A02_demote_f2_to_f1') {
+      r.expected_uplift_thb = r.sales * CONFIG.actions.A02_demote_f2_to_f1.elasticity;
+    } else if (ac === 'A03_pfs_coaching') {
+      const gap = (r.pfs_score || 0) > 0 ? (r.pfs_peer_median - r.pfs_score) / r.pfs_score : 0;
+      r.expected_uplift_thb = r.sales * gap * CONFIG.actions.A03_pfs_coaching.beta;
+    } else if (ac === 'A04_sku_expansion') {
+      const gap = (r.sku_per_outlet || 0) > 0 ? (r.sku_peer_median - r.sku_per_outlet) / r.sku_per_outlet : 0;
+      r.expected_uplift_thb = r.sales * gap * CONFIG.actions.A04_sku_expansion.gamma;
+    } else if (ac === 'A05_reactivate') {
+      r.expected_uplift_thb = r.value_peer_median;
+    } else if (ac === 'A06_strike_rate_recovery') {
+      const gap = Math.max(0, r.strike_peer_median - (r.strike_rate || 0));
+      r.expected_uplift_thb = r.visit_count * gap * (r.drop_size || 0);
+    }
+    r.expected_uplift_thb = Math.round(r.expected_uplift_thb * 100) / 100;
+  }
+
+  progressFn('Done', 100);
+  return fact;
+}
+
+// Simple async sleep so progress UI can update
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+
+// =====================================================
+// STORAGE (IndexedDB), DASHBOARD, EXPORT
+// =====================================================
+
+// ============================================================
+// IndexedDB wrapper
+// ============================================================
+const DB_NAME = 'sales_analytics';
+const DB_VERSION = 1;
+const STORE_DC = 'dc_data';
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(STORE_DC)) {
+        db.createObjectStore(STORE_DC, { keyPath: 'dc_code' });
+      }
+    };
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror = e => reject(e.target.error);
+  });
+}
+
+async function dbSet(dc_code, data) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_DC, 'readwrite');
+    tx.objectStore(STORE_DC).put({ dc_code, ...data });
+    tx.oncomplete = () => resolve();
+    tx.onerror = e => reject(e.target.error);
+  });
+}
+
+async function dbGet(dc_code) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_DC, 'readonly');
+    const req = tx.objectStore(STORE_DC).get(dc_code);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = e => reject(e.target.error);
+  });
+}
+
+async function dbAll() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_DC, 'readonly');
+    const req = tx.objectStore(STORE_DC).getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = e => reject(e.target.error);
+  });
+}
+
+async function dbDelete(dc_code) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_DC, 'readwrite');
+    tx.objectStore(STORE_DC).delete(dc_code);
+    tx.oncomplete = () => resolve();
+    tx.onerror = e => reject(e.target.error);
+  });
+}
+
+// ============================================================
+// FILE UPLOAD HANDLING
+// ============================================================
+function stageFiles(fileList) {
+  for (const f of fileList) {
+    const type = classifyFile(f);
+    APP.staged.push({ file: f, type, name: f.name, size: f.size });
+  }
+  renderStagedFiles();
+}
+
+function renderStagedFiles() {
+  const wrap = document.getElementById('file-staging');
+  const list = document.getElementById('staged-list');
+  if (APP.staged.length === 0) { wrap.classList.add('hidden'); return; }
+  wrap.classList.remove('hidden');
+  const typeLabel = { sellout: 'Sellout', hh: 'HH Visit', pfs: 'PFS Audit', unknown: '❓ Unknown' };
+  const typeBadge = { sellout: 'b-blue', hh: 'b-amber', pfs: 'b-green', unknown: 'b-rose' };
+  list.innerHTML = APP.staged.map((f, i) => `
+    <div class="flex items-center justify-between py-1.5 px-2 hover:bg-slate-50 rounded">
+      <div class="flex items-center gap-3">
+        <span class="badge ${typeBadge[f.type]}">${typeLabel[f.type]}</span>
+        <span class="text-slate-700">${f.name}</span>
+        <span class="text-xs text-slate-400">${(f.size / 1024 / 1024).toFixed(1)} MB</span>
+      </div>
+      <button onclick="APP.staged.splice(${i},1);renderStagedFiles()" class="text-slate-400 hover:text-rose-500 text-sm">✕</button>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+// MAIN PROCESS FLOW
+// ============================================================
+async function processStagedFiles() {
+  if (APP.staged.length === 0) {
+    Swal.fire({ icon: 'info', title: 'No files staged', text: 'Drop or pick the 5 files first.' });
+    return;
+  }
+  // Soft validation: process whatever is uploaded
+  const types = APP.staged.map(f => f.type);
+  const nSell = types.filter(t => t === 'sellout').length;
+  const nHH = types.filter(t => t === 'hh').length;
+  const nPFS = types.filter(t => t === 'pfs').length;
+  if (nSell === 0 && nHH === 0 && nPFS === 0) {
+    Swal.fire({ icon: 'error', title: 'No usable files',
+      text: 'Could not recognize any file as Sellout/HH/PFS. Check filenames contain those keywords.' });
+    return;
+  }
+  // If a key source is missing, just inform (don't block)
+  const missing = [];
+  if (nSell === 0) missing.push('Sellout (sales KPIs will be empty)');
+  if (nHH === 0) missing.push('HH (visit KPIs will be empty)');
+  if (nPFS === 0) missing.push('PFS (audit scores will be empty)');
+  if (missing.length > 0) {
+    const ok = await Swal.fire({
+      icon: 'info',
+      title: 'Partial data',
+      html: `Not detected: <br/><b>${missing.join('<br/>')}</b><br/><br/>That's fine, related KPIs will be blank. Continue?`,
+      showCancelButton: true, confirmButtonText: 'Process',
+    });
+    if (!ok.isConfirmed) return;
+  }
+
+  // Show progress
+  document.getElementById('processing').classList.remove('hidden');
+  const setProgress = (msg, pct) => {
+    document.getElementById('processing-step').textContent = msg;
+    document.getElementById('progress-bar').style.width = pct + '%';
+  };
+
+  try {
+    // Read all files
+    setProgress('Reading files...', 5);
+    const allSellout = [], allHH = [], allPFS = [];
+    let i = 0;
+    for (const sf of APP.staged) {
+      i++;
+      setProgress(`Reading ${sf.name}...`, 5 + (i / APP.staged.length) * 20);
+      await sleep(10);
+      const wb = await readWorkbook(sf.file);
+      const rows = sheetToJson(wb);
+      if (sf.type === 'sellout') allSellout.push(...normSellout(rows));
+      else if (sf.type === 'hh') allHH.push(...normHH(rows));
+      else if (sf.type === 'pfs') allPFS.push(...normPFS(rows));
+    }
+
+    // Detect DC code from data
+    const dcCodes = uniq([...allSellout, ...allHH, ...allPFS].map(r => r.dc_code).filter(Boolean));
+    if (dcCodes.length === 0) {
+      throw new Error('Could not detect DC code from any file.');
+    }
+    if (dcCodes.length > 1) {
+      const ok = await Swal.fire({
+        icon: 'warning',
+        title: 'Multiple DCs detected',
+        html: `Files contain DCs: <b>${dcCodes.join(', ')}</b>.<br/>The tool processes 1 DC at a time. Process them as combined?`,
+        showCancelButton: true, confirmButtonText: 'Process combined',
+      });
+      if (!ok.isConfirmed) {
+        document.getElementById('processing').classList.add('hidden');
+        return;
+      }
+    }
+    const dcCode = dcCodes[0]; // primary; if combined, first
+
+    // Check for existing DC in storage
+    const existing = await dbGet(dcCode);
+    if (existing) {
+      const existMonths = existing.months || [];
+      const newMonths = uniq(allSellout.map(r => toMonthStr(r.kpi_date)).filter(Boolean));
+      const overlap = newMonths.filter(m => existMonths.includes(m));
+      const decision = await Swal.fire({
+        icon: 'question',
+        title: `DC ${dcCode} already loaded`,
+        html: `
+          <div class="text-left text-sm">
+            <p><b>Existing:</b> ${existMonths[0] || '?'} → ${existMonths[existMonths.length-1] || '?'} (${existing.n_outlets} outlets)</p>
+            <p><b>New file:</b> ${newMonths[0] || '?'} → ${newMonths[newMonths.length-1] || '?'}</p>
+            <p><b>Overlap:</b> ${overlap.length} months</p>
+            <p class="mt-2 text-slate-500">Choose how to merge:</p>
+          </div>`,
+        showDenyButton: true, showCancelButton: true,
+        confirmButtonText: 'Replace All',
+        denyButtonText: 'Merge (newer wins)',
+        cancelButtonText: 'Cancel',
+      });
+      if (decision.isDismissed) {
+        document.getElementById('processing').classList.add('hidden');
+        return;
+      }
+      if (decision.isDenied) {
+        // Merge mode: keep old rows for non-overlap months only, replace overlap with new
+        // Will be handled after processing
+        setProgress('Merging with existing data...', 25);
+      } else {
+        // Replace: just delete existing
+        await dbDelete(dcCode);
+      }
+    }
+
+    // Process
+    setProgress('Building KPIs...', 30);
+    await sleep(10);
+    const fact = await buildOutletMonthly(allSellout, allHH, allPFS, setProgress);
+
+    // Handle merge (newer wins)
+    let finalRows = fact;
+    if (existing && existing.rows) {
+      // Only relevant if user picked Deny (merge newer wins)
+      const newMonths = new Set(fact.map(r => r.kpi_month));
+      const keepOld = existing.rows.filter(r => !newMonths.has(r.kpi_month));
+      finalRows = [...keepOld, ...fact];
+    }
+
+    // Save
+    setProgress('Saving to browser storage...', 98);
+    await sleep(10);
+    const months = uniq(finalRows.map(r => r.kpi_month)).sort();
+    await dbSet(dcCode, {
+      rows: finalRows,
+      months,
+      processed_at: new Date().toISOString(),
+      n_outlets: uniq(finalRows.map(r => r.customer_code)).length,
+    });
+    APP.data[dcCode] = { rows: finalRows, months, n_outlets: uniq(finalRows.map(r => r.customer_code)).length };
+
+    setProgress('Complete!', 100);
+    await sleep(300);
+    document.getElementById('processing').classList.add('hidden');
+    document.getElementById('file-staging').classList.add('hidden');
+    APP.staged = [];
+    renderStagedFiles();
+    renderDCList();
+    refreshFilters();
+
+    Swal.fire({
+      icon: 'success',
+      title: `DC ${dcCode} loaded`,
+      html: `<div class="text-sm"><p>${finalRows.length.toLocaleString()} outlet-month rows</p>
+             <p>${months.length} months: ${months[0]} → ${months[months.length-1]}</p>
+             <p>${uniq(finalRows.map(r => r.customer_code)).length.toLocaleString()} outlets</p></div>`,
+      timer: 3000,
+    });
+  } catch (err) {
+    console.error(err);
+    document.getElementById('processing').classList.add('hidden');
+    Swal.fire({ icon: 'error', title: 'Processing failed', text: err.message });
+  }
+}
+
+// ============================================================
+// DC LIST RENDERING
+// ============================================================
+async function renderDCList() {
+  const all = await dbAll();
+  const wrap = document.getElementById('dc-list');
+  if (all.length === 0) {
+    wrap.innerHTML = '<div class="card p-4 text-sm text-slate-400 italic">No DCs loaded yet — upload to get started</div>';
+    document.getElementById('btn-export-excel').disabled = true;
+    document.getElementById('btn-export-csv').disabled = true;
+    document.getElementById('storage-info').textContent = 'No data loaded';
+    return;
+  }
+  wrap.innerHTML = all.map(d => {
+    const dt = new Date(d.processed_at).toLocaleString();
+    return `
+      <div class="card card-hover p-4 flex items-center justify-between">
+        <div>
+          <div class="font-medium text-slate-900">DC ${d.dc_code}</div>
+          <div class="text-xs text-slate-500">
+            ${d.n_outlets.toLocaleString()} outlets · ${d.months.length} months
+            (${d.months[0]} → ${d.months[d.months.length - 1]})
+            · processed ${dt}
+          </div>
+        </div>
+        <button onclick="removeDC('${d.dc_code}')" class="text-xs text-rose-500 hover:text-rose-700">Remove</button>
+      </div>
+    `;
+  }).join('');
+
+  // Load into APP state
+  APP.data = {};
+  for (const d of all) APP.data[d.dc_code] = { rows: d.rows, months: d.months, n_outlets: d.n_outlets };
+
+  document.getElementById('btn-export-excel').disabled = false;
+  document.getElementById('btn-export-csv').disabled = false;
+  const totalOutlets = all.reduce((s, d) => s + d.n_outlets, 0);
+  document.getElementById('storage-info').textContent = `${all.length} DC${all.length > 1 ? 's' : ''} · ${totalOutlets.toLocaleString()} outlets`;
+}
+
+async function removeDC(dcCode) {
+  const ok = await Swal.fire({
+    icon: 'warning',
+    title: `Remove DC ${dcCode}?`,
+    text: 'You will need to re-upload files to see this data again.',
+    showCancelButton: true,
+    confirmButtonText: 'Remove',
+  });
+  if (!ok.isConfirmed) return;
+  await dbDelete(dcCode);
+  delete APP.data[dcCode];
+  renderDCList();
+  refreshFilters();
+  Swal.fire({ icon: 'success', title: 'Removed', timer: 1200, showConfirmButton: false });
+}
+
+// ============================================================
+// FILTERS + DATA ACCESS
+// ============================================================
+function getAllRows() {
+  const rows = [];
+  for (const dc in APP.data) rows.push(...APP.data[dc].rows);
+  return rows;
+}
+
+function applyFilters(rows) {
+  const f = APP.filter;
+  return rows.filter(r =>
+    (!f.dc || r.dc_code === f.dc) &&
+    (!f.channel || r.channel === f.channel) &&
+    (!f.salesman || r.salesman_code === f.salesman) &&
+    (!f.month || r.kpi_month === f.month)
+  );
+}
+
+function refreshFilters() {
+  const rows = getAllRows();
+  // Populate filter dropdowns
+  const setOpts = (id, vals, current) => {
+    const el = document.getElementById(id);
+    const opts = ['<option value="">All</option>'].concat(
+      [...vals].sort().map(v => `<option value="${v}"${v === current ? ' selected' : ''}>${v}</option>`)
+    );
+    el.innerHTML = opts.join('');
+  };
+  setOpts('filter-dc', uniq(rows.map(r => r.dc_code).filter(Boolean)), APP.filter.dc);
+  setOpts('filter-channel', uniq(rows.map(r => r.channel).filter(Boolean)), APP.filter.channel);
+  setOpts('filter-salesman', uniq(rows.map(r => r.salesman_code).filter(Boolean)), APP.filter.salesman);
+  setOpts('filter-month', uniq(rows.map(r => r.kpi_month).filter(Boolean)), APP.filter.month);
+  renderDashboard();
+}
+
+// ============================================================
+// DASHBOARD RENDERING (compact single-screen with baselines)
+// ============================================================
+function renderDashboard() {
+  const rows = applyFilters(getAllRows());
+  renderOverviewV2(rows);
+  renderOutletTable();
+  renderActions(rows);
+  renderTrend();
+}
+
+// Compute aggregate KPIs for a row subset
+function aggKPIs(subset) {
+  const sales = sum(subset.map(r => r.sales));
+  const active = sum(subset.map(r => r.active));
+  const bills = sum(subset.map(r => r.n_invoices));
+  const visit = sum(subset.map(r => r.visit_count));
+  const succ = sum(subset.map(r => r.visit_successful_count));
+  const planned = sum(subset.map(r => r.visit_planned_count));
+  const extra = sum(subset.map(r => r.visit_extra_count));
+  const onplan = sum(subset.map(r => r.visit_onplan_count));
+  const skus = sum(subset.map(r => r.sku_per_outlet));
+  const coverage = uniq(subset.filter(r => r.visit_onplan_count > 0).map(r => r.customer_code)).length;
+  const n_outlets = uniq(subset.map(r => r.customer_code)).length;
+  const uplift = sum(subset.filter(r => r.primary_action !== 'A00_no_action').map(r => r.expected_uplift_thb));
+  const upliftCount = subset.filter(r => r.primary_action !== 'A00_no_action').length;
+  return {
+    sales, active, bills, visit, succ, planned, extra, onplan, coverage, n_outlets,
+    drop: bills > 0 ? sales / bills : 0,
+    strike: visit > 0 ? succ / visit : 0,
+    extra_pct: planned > 0 ? extra / planned : 0,
+    aso: coverage > 0 ? active / coverage : 0,
+    compliance: mean(subset.map(r => r.visit_compliance)) || 0,
+    pfs: mean(subset.map(r => r.pfs_score).filter(x => x != null)) || 0,
+    sku_per_outlet: n_outlets > 0 ? skus / n_outlets : 0,
+    uplift, upliftCount,
+  };
+}
+
+function renderOverviewV2(rows) {
+  const months = uniq(rows.map(r => r.kpi_month).filter(Boolean)).sort();
+  if (months.length === 0) return;
+  const curMonth = APP.filter.month || months[months.length - 1];
+  const curIdx = months.indexOf(curMonth);
+  const prevMonth = months[curIdx - 1];
+  const prev3M = months.slice(Math.max(0, curIdx - 3), curIdx);
+
+  const cur = rows.filter(r => r.kpi_month === curMonth);
+  const prev = prevMonth ? rows.filter(r => r.kpi_month === prevMonth) : [];
+  const curAgg = aggKPIs(cur);
+  const prevAgg = prev.length ? aggKPIs(prev) : null;
+
+  // 3M trailing avg
+  const prev3Aggs = prev3M.map(mo => aggKPIs(rows.filter(r => r.kpi_month === mo)));
+  const prev3Avg = prev3Aggs.length === 0 ? null : {
+    sales: mean(prev3Aggs.map(a => a.sales)),
+    bills: mean(prev3Aggs.map(a => a.bills)),
+    active: mean(prev3Aggs.map(a => a.active)),
+    coverage: mean(prev3Aggs.map(a => a.coverage)),
+    visit: mean(prev3Aggs.map(a => a.visit)),
+    extra_pct: mean(prev3Aggs.map(a => a.extra_pct)),
+    strike: mean(prev3Aggs.map(a => a.strike)),
+    drop: mean(prev3Aggs.map(a => a.drop)),
+    pfs: mean(prev3Aggs.map(a => a.pfs)),
+    sku_per_outlet: mean(prev3Aggs.map(a => a.sku_per_outlet)),
+    compliance: mean(prev3Aggs.map(a => a.compliance)),
+  };
+
+  // Top Q salesman within current scope
+  const salesmen = uniq(cur.map(r => r.salesman_code).filter(Boolean));
+  const slmAggs = salesmen.map(s => ({
+    sm: s, ...aggKPIs(cur.filter(r => r.salesman_code === s))
+  }));
+  const topQ = {
+    sales: quantile(slmAggs.map(a => a.sales), 0.75) || 0,
+    bills: quantile(slmAggs.map(a => a.bills), 0.75) || 0,
+    visit: quantile(slmAggs.map(a => a.visit), 0.75) || 0,
+    extra_pct: quantile(slmAggs.map(a => a.extra_pct), 0.75) || 0,
+    strike: quantile(slmAggs.map(a => a.strike), 0.75) || 0,
+    drop: quantile(slmAggs.map(a => a.drop), 0.75) || 0,
+    sku_per_outlet: quantile(slmAggs.map(a => a.sku_per_outlet), 0.75) || 0,
+    pfs: quantile(slmAggs.map(a => a.pfs), 0.75) || 0,
+    compliance: quantile(slmAggs.map(a => a.compliance), 0.75) || 0,
+  };
+
+  // Filter context
+  const ctx = [];
+  if (APP.filter.dc) ctx.push(`DC ${APP.filter.dc}`);
+  if (APP.filter.channel) ctx.push(APP.filter.channel);
+  if (APP.filter.salesman) ctx.push(APP.filter.salesman);
+  ctx.push(curMonth);
+  document.getElementById('filter-context').textContent = '· ' + ctx.join(' · ');
+  document.getElementById('trend-months-label').textContent = `${months[0]} → ${months[months.length-1]}`;
+
+  // Populate current values + baselines for each KPI card
+  document.getElementById('kpi-sales').textContent = Fmt.money(curAgg.sales);
+  setBadge('kpi-sales-mom', deltaPct(curAgg.sales, prevAgg?.sales), 'MoM');
+  setVsLabel('kpi-sales-vs3m', deltaPct(curAgg.sales, prev3Avg?.sales));
+  document.getElementById('kpi-sales-topq').textContent = topQ.sales ? Fmt.money(topQ.sales) : '—';
+
+  document.getElementById('kpi-bills').textContent = Fmt.num(curAgg.bills);
+  setBadge('kpi-bills-mom', deltaPct(curAgg.bills, prevAgg?.bills), 'MoM');
+  setVsLabel('kpi-bills-vs3m', deltaPct(curAgg.bills, prev3Avg?.bills));
+  document.getElementById('kpi-bills-topq').textContent = topQ.bills ? Fmt.num(topQ.bills) : '—';
+
+  document.getElementById('kpi-drop').textContent = Fmt.money(curAgg.drop);
+  setBadge('kpi-drop-mom', deltaPct(curAgg.drop, prevAgg?.drop), 'MoM');
+  setVsLabel('kpi-drop-vs3m', deltaPct(curAgg.drop, prev3Avg?.drop));
+  document.getElementById('kpi-drop-topq').textContent = topQ.drop ? Fmt.money(topQ.drop) : '—';
+
+  document.getElementById('kpi-active').textContent = Fmt.num(curAgg.active);
+  setBadge('kpi-active-mom', deltaPct(curAgg.active, prevAgg?.active), 'MoM');
+  document.getElementById('kpi-aso').textContent = Fmt.pct(curAgg.aso);
+  setVsLabel('kpi-active-vs3m', deltaPct(curAgg.active, prev3Avg?.active));
+
+  document.getElementById('kpi-coverage').textContent = Fmt.num(curAgg.coverage);
+  setBadge('kpi-coverage-mom', deltaPct(curAgg.coverage, prevAgg?.coverage), 'MoM');
+  setVsLabel('kpi-coverage-vs3m', deltaPct(curAgg.coverage, prev3Avg?.coverage));
+  document.getElementById('kpi-coverage-detail').textContent = `${Fmt.num(curAgg.n_outlets)}`;
+
+  document.getElementById('kpi-sku').textContent = Fmt.num1(curAgg.sku_per_outlet);
+  setBadge('kpi-sku-mom', deltaPct(curAgg.sku_per_outlet, prevAgg?.sku_per_outlet), 'MoM');
+  setVsLabel('kpi-sku-vs3m', deltaPct(curAgg.sku_per_outlet, prev3Avg?.sku_per_outlet));
+  document.getElementById('kpi-sku-topq').textContent = topQ.sku_per_outlet ? Fmt.num1(topQ.sku_per_outlet) : '—';
+
+  document.getElementById('kpi-visits').textContent = Fmt.num(curAgg.visit);
+  setBadge('kpi-visits-mom', deltaPct(curAgg.visit, prevAgg?.visit), 'MoM');
+  setVsLabel('kpi-visits-vs3m', deltaPct(curAgg.visit, prev3Avg?.visit));
+  document.getElementById('kpi-visits-topq').textContent = topQ.visit ? Fmt.num(topQ.visit) : '—';
+
+  document.getElementById('kpi-extra').textContent = Fmt.pct(curAgg.extra_pct);
+  setBadge('kpi-extra-mom', deltaPP(curAgg.extra_pct, prevAgg?.extra_pct), 'pp');
+  setVsLabel('kpi-extra-vs3m', deltaPP(curAgg.extra_pct, prev3Avg?.extra_pct), '', 'pp');
+  document.getElementById('kpi-extra-topq').textContent = topQ.extra_pct ? Fmt.pct(topQ.extra_pct) : '—';
+
+  document.getElementById('kpi-strike').textContent = Fmt.pct(curAgg.strike);
+  setBadge('kpi-strike-mom', deltaPP(curAgg.strike, prevAgg?.strike), 'pp');
+  setVsLabel('kpi-strike-vs3m', deltaPP(curAgg.strike, prev3Avg?.strike), '', 'pp');
+  document.getElementById('kpi-strike-topq').textContent = topQ.strike ? Fmt.pct(topQ.strike) : '—';
+
+  document.getElementById('kpi-pfs').textContent = Fmt.num1(curAgg.pfs);
+  setBadge('kpi-pfs-mom', deltaPct(curAgg.pfs, prevAgg?.pfs), 'MoM');
+  setVsLabel('kpi-pfs-vs3m', deltaPct(curAgg.pfs, prev3Avg?.pfs));
+  document.getElementById('kpi-pfs-topq').textContent = topQ.pfs ? Fmt.num1(topQ.pfs) : '—';
+
+  document.getElementById('kpi-compliance').textContent = Fmt.pct(curAgg.compliance);
+  setBadge('kpi-compliance-mom', deltaPP(curAgg.compliance, prevAgg?.compliance), 'pp');
+  setVsLabel('kpi-compliance-vs3m', deltaPP(curAgg.compliance, prev3Avg?.compliance), '', 'pp');
+  document.getElementById('kpi-compliance-topq').textContent = topQ.compliance ? Fmt.pct(topQ.compliance) : '—';
+
+  // ============ Trend line charts (12 months) ============
+  const series = computeMonthlySeries(rows, months);
+  drawTrendChart('trend-sales',      months, series.sales,      '#3B82F6', 'money');
+  drawTrendChart('trend-bills',      months, series.bills,      '#1D4ED8', 'num');
+  drawTrendChart('trend-drop',       months, series.drop,       '#F59E0B', 'money');
+  drawTrendChart('trend-active',     months, series.active,     '#A78BFA', 'num');
+  drawTrendChart('trend-coverage',   months, series.coverage,   '#06B6D4', 'num');
+  drawTrendChart('trend-sku',        months, series.sku,        '#EF4444', 'num1');
+  drawTrendChart('trend-visits',     months, series.visits,     '#0EA5E9', 'num');
+  drawTrendChart('trend-extra',      months, series.extra_pct,  '#F97316', 'pct');
+  drawTrendChart('trend-strike',     months, series.strike,     '#10B981', 'pct');
+  drawTrendChart('trend-pfs',        months, series.pfs,        '#8B5CF6', 'num1');
+  drawTrendChart('trend-compliance', months, series.compliance, '#EC4899', 'pct');
+  drawTrendChart('trend-uplift',     months, series.uplift,     '#059669', 'money');
+
+  // Uplift card baselines
+  document.getElementById('kpi-uplift').textContent = Fmt.money(curAgg.uplift);
+  document.getElementById('kpi-uplift-count').textContent =
+    `${curAgg.upliftCount.toLocaleString()} actions`;
+  const upliftPrev = prevAgg ? sum(prev.filter(r => r.primary_action !== 'A00_no_action').map(r => r.expected_uplift_thb)) : null;
+  setBadge('kpi-uplift-mom', deltaPct(curAgg.uplift, upliftPrev), 'MoM');
+  const upliftPrev3 = prev3M.length === 0 ? null : mean(prev3M.map(mo =>
+    sum(rows.filter(r => r.kpi_month === mo && r.primary_action !== 'A00_no_action').map(r => r.expected_uplift_thb))
+  ));
+  setVsLabel('kpi-uplift-vs3m', deltaPct(curAgg.uplift, upliftPrev3));
+
+  // ============ Distribution ============
+  drawChannelMix(cur);
+  renderQuadrantCompact(cur.filter(r => r.active === 1));
+  renderLifecycle(rows, curMonth);
+
+  // ============ Action Priority chart + Lists ============
+  drawActionPriorityChart(cur);
+
+  // Top Salesman list with progress bars
+  const topSalesmen = [...slmAggs].sort((a, b) => b.sales - a.sales).slice(0, 10);
+  const maxSales = topSalesmen[0]?.sales || 1;
+  document.getElementById('list-salesman').innerHTML = topSalesmen.map((s, i) => `
+    <div>
+      <div class="flex items-center justify-between mb-0.5">
+        <span class="text-slate-700"><span class="text-slate-400 mr-1">${i+1}.</span>${s.sm}</span>
+        <span class="text-slate-900 font-semibold tabular-nums">${Fmt.money(s.sales)}</span>
+      </div>
+      <div class="h-1.5 bg-slate-100 rounded">
+        <div class="h-1.5 bg-blue-400 rounded" style="width: ${(s.sales / maxSales * 100).toFixed(0)}%"></div>
+      </div>
+    </div>
+  `).join('') || '<p class="text-slate-400 italic">No data</p>';
+
+  // Top Uplift Outlets
+  const topUplift = [...cur].filter(r => r.primary_action !== 'A00_no_action')
+    .sort((a, b) => b.expected_uplift_thb - a.expected_uplift_thb).slice(0, 10);
+  document.getElementById('list-uplift').innerHTML = topUplift.map(r => `
+    <div class="flex items-center justify-between py-0.5">
+      <div class="flex-1 min-w-0 mr-2">
+        <div class="text-slate-900 truncate" title="${r.shop_name}">${r.shop_name}</div>
+        <div class="text-[10px] text-slate-400 truncate">${r.salesman_code || '—'} · ${(r.action_reason || '').replace(' to Peer Median','')}</div>
+      </div>
+      <span class="text-emerald-600 font-semibold tabular-nums">${Fmt.money(r.expected_uplift_thb)}</span>
+    </div>
+  `).join('') || '<p class="text-slate-400 italic">No outlets</p>';
+}
+
+// Compute monthly time-series for all KPIs in one pass (avoids repeated filtering)
+function computeMonthlySeries(rows, months) {
+  const series = { sales: [], bills: [], drop: [], active: [], coverage: [], sku: [],
+                   visits: [], extra_pct: [], strike: [],
+                   pfs: [], compliance: [], uplift: [] };
+  for (const mo of months) {
+    const sub = rows.filter(r => r.kpi_month === mo);
+    const sales = sum(sub.map(r => r.sales));
+    const active = sum(sub.map(r => r.active));
+    const bills = sum(sub.map(r => r.n_invoices));
+    const visit = sum(sub.map(r => r.visit_count));
+    const planned = sum(sub.map(r => r.visit_planned_count));
+    const extra = sum(sub.map(r => r.visit_extra_count));
+    const succ = sum(sub.map(r => r.visit_successful_count));
+    const onplan_outlets = uniq(sub.filter(r => r.visit_onplan_count > 0).map(r => r.customer_code)).length;
+    const n_outlets = uniq(sub.map(r => r.customer_code)).length;
+    const uplift = sum(sub.filter(r => r.primary_action !== 'A00_no_action').map(r => r.expected_uplift_thb));
+    series.sales.push(sales);
+    series.bills.push(bills);
+    series.drop.push(bills > 0 ? sales / bills : 0);
+    series.active.push(active);
+    series.coverage.push(onplan_outlets);
+    series.sku.push(n_outlets > 0 ? sum(sub.map(r => r.sku_per_outlet || 0)) / n_outlets : 0);
+    series.visits.push(visit);
+    series.extra_pct.push(planned > 0 ? extra / planned : 0);
+    series.strike.push(visit > 0 ? succ / visit : 0);
+    series.pfs.push(mean(sub.map(r => r.pfs_score).filter(x => x != null)) || 0);
+    series.compliance.push(mean(sub.map(r => r.visit_compliance)) || 0);
+    series.uplift.push(uplift);
+  }
+  return series;
+}
+
+// Baseline helpers
+function deltaPct(cur, base) {
+  if (base == null || base === 0) return null;
+  return (cur - base) / base * 100;
+}
+function deltaPP(cur, base) {
+  if (base == null) return null;
+  return (cur - base) * 100;
+}
+function setBadge(id, val, suffix) {
+  const el = document.getElementById(id);
+  if (val == null || isNaN(val)) { el.textContent = '—'; el.className = 'badge b-slate'; return; }
+  const sign = val > 0 ? '+' : '';
+  el.textContent = `${sign}${val.toFixed(1)}${suffix === 'pp' ? 'pp' : '%'}`;
+  el.className = 'badge ' + (val > 0 ? 'b-green' : val < 0 ? 'b-rose' : 'b-slate');
+}
+function setVsLabel(id, val, prefix, unit) {
+  const el = document.getElementById(id);
+  if (val == null || isNaN(val)) { el.textContent = '—'; return; }
+  const sign = val > 0 ? '+' : '';
+  const color = val > 0 ? 'text-emerald-600' : val < 0 ? 'text-rose-500' : 'text-slate-700';
+  const u = unit === 'pp' ? 'pp' : '%';
+  el.innerHTML = `<span class="${color}">${sign}${val.toFixed(1)}${u}</span>${prefix ? ' ' + prefix : ''}`;
+}
+
+// ============================================================
+// CHART HELPERS
+// ============================================================
+const COLORS = ['#60A5FA', '#34D399', '#FBBF24', '#F87171', '#A78BFA', '#FB923C', '#22D3EE'];
+
+function destroyChart(id) {
+  if (APP.charts[id]) { APP.charts[id].destroy(); delete APP.charts[id]; }
+}
+
+// Format a value according to KPI type
+function fmtVal(v, fmt) {
+  if (v == null || isNaN(v)) return '—';
+  if (fmt === 'money') return '฿' + Math.round(v).toLocaleString();
+  if (fmt === 'pct') return (v * 100).toFixed(1) + '%';
+  if (fmt === 'num1') return v.toFixed(1);
+  return Math.round(v).toLocaleString();
+}
+
+// Format a Y-axis tick label (abbreviated for chart axes)
+function fmtYTick(v, fmt) {
+  if (fmt === 'money') {
+    if (Math.abs(v) >= 1e6) return (v / 1e6).toFixed(1) + 'M';
+    if (Math.abs(v) >= 1e3) return (v / 1e3).toFixed(0) + 'K';
+    return Math.round(v).toLocaleString();
+  }
+  if (fmt === 'pct') return (v * 100).toFixed(0) + '%';
+  if (fmt === 'num1') return v.toFixed(1);
+  return Math.round(v).toLocaleString();
+}
+
+// Trend line chart with proper axes and readable labels
+function drawTrendChart(id, labels, data, color, fmt) {
+  destroyChart(id);
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  // Highlight the last data point
+  const lastIdx = data.length - 1;
+  const pointColors = data.map((_, i) => i === lastIdx ? color : color);
+  const pointRadii = data.map((_, i) => i === lastIdx ? 4 : 2);
+
+  // For rate/percent metrics, don't force Y-axis to start at 0 (compresses meaningful variation)
+  const beginAtZero = (fmt === 'money' || fmt === 'num');
+
+  APP.charts[id] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels.map(l => l.slice(5)), // show "MM" only
+      datasets: [{
+        data,
+        borderColor: color,
+        backgroundColor: color + '15',
+        fill: true,
+        tension: 0.3,
+        borderWidth: 2,
+        pointBackgroundColor: pointColors,
+        pointBorderColor: '#fff',
+        pointBorderWidth: 1,
+        pointRadius: pointRadii,
+        pointHoverRadius: 5,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: c => fmtVal(c.parsed.y, fmt),
+            title: items => labels[items[0].dataIndex],
+          },
+          padding: 8, displayColors: false,
+        }
+      },
+      scales: {
+        x: {
+          ticks: { font: { size: 10 }, color: '#94A3B8', maxRotation: 0, autoSkipPadding: 6 },
+          grid: { display: false },
+          border: { display: false },
+        },
+        y: {
+          beginAtZero,
+          ticks: {
+            font: { size: 10 },
+            color: '#94A3B8',
+            callback: v => fmtYTick(v, fmt),
+            maxTicksLimit: 4,
+            padding: 4,
+          },
+          grid: { color: '#F1F5F9' },
+          border: { display: false },
+        }
+      },
+      interaction: { mode: 'index', intersect: false }
+    }
+  });
+}
+
+// Doughnut chart for channel mix
+function drawChannelMix(cur) {
+  destroyChart('chart-channel');
+  const canvas = document.getElementById('chart-channel');
+  if (!canvas) return;
+  const groups = groupBy(cur, r => r.channel || 'Other');
+  const labels = [...groups.keys()];
+  const data = labels.map(c => sum(groups.get(c).map(r => r.sales)));
+  const total = data.reduce((s, x) => s + x, 0) || 1;
+
+  APP.charts['chart-channel'] = new Chart(canvas.getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#A78BFA', '#EC4899'],
+        borderColor: 'white',
+        borderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '62%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { font: { size: 11 }, padding: 10, boxWidth: 12, boxHeight: 12 },
+        },
+        tooltip: {
+          callbacks: {
+            label: c => `${c.label}: ฿${Math.round(c.parsed).toLocaleString()} (${(c.parsed/total*100).toFixed(1)}%)`
+          },
+          padding: 8,
+        }
+      }
+    }
+  });
+}
+
+// Horizontal bar chart for action priority (supports negative for A02)
+function drawActionPriorityChart(cur) {
+  destroyChart('chart-actions');
+  const canvas = document.getElementById('chart-actions');
+  if (!canvas) return;
+  const groups = groupBy(cur.filter(r => r.primary_action !== 'A00_no_action'), r => r.primary_action);
+  const sorted = [...groups.entries()]
+    .map(([code, rs]) => ({
+      code, count: rs.length,
+      label: (CONFIG.actions[code]?.name || code).replace(' to Peer Median', '').replace(' Range Expansion', ' Expand'),
+      value: sum(rs.map(r => r.expected_uplift_thb)),
+    }))
+    .sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+
+  APP.charts['chart-actions'] = new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: sorted.map(s => s.label),
+      datasets: [{
+        data: sorted.map(s => s.value),
+        backgroundColor: sorted.map(s => s.value >= 0 ? '#10B981' : '#F87171'),
+        borderRadius: 3,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      indexAxis: 'y',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: c => `${fmtVal(c.parsed.x, 'money')} (${sorted[c.dataIndex].count} outlets)`
+          },
+          padding: 8, displayColors: false,
+        }
+      },
+      scales: {
+        x: {
+          ticks: { font: { size: 10 }, color: '#94A3B8', callback: v => fmtYTick(v, 'money') },
+          grid: { color: '#F1F5F9' },
+          border: { display: false },
+        },
+        y: {
+          ticks: { font: { size: 11 }, color: '#475569' },
+          grid: { display: false },
+          border: { display: false },
+        }
+      }
+    }
+  });
+}
+
+function renderLifecycle(rows, curMonth) {
+  // Build per-outlet state: was it active this month? days since last sale (global)
+  const outletState = new Map();
+  for (const r of rows) {
+    if (!outletState.has(r.customer_code)) {
+      outletState.set(r.customer_code, { activeThisMonth: false, daysSince: r.day_since_last_sales ?? 9999 });
+    }
+    const s = outletState.get(r.customer_code);
+    if (r.kpi_month === curMonth && r.active === 1) s.activeThisMonth = true;
+    // day_since_last_sales is global per outlet; take the min (most recent)
+    if (r.day_since_last_sales != null && r.day_since_last_sales < s.daysSince) {
+      s.daysSince = r.day_since_last_sales;
+    }
+  }
+
+  const buckets = [
+    { label: 'Active',        desc: 'Bought this month',     color: 'bg-emerald-500', count: 0 },
+    { label: 'Just Inactive', desc: '< 30 days since sale',  color: 'bg-sky-400',     count: 0 },
+    { label: 'Dormant',       desc: '30-89 days · A05 ⭐',   color: 'bg-amber-500',   count: 0 },
+    { label: 'Long Dormant',  desc: '90-179 days',           color: 'bg-orange-500',  count: 0 },
+    { label: 'Lost / Closed?',desc: '180+ days',             color: 'bg-rose-500',    count: 0 },
+  ];
+  for (const [, s] of outletState) {
+    if (s.activeThisMonth) buckets[0].count++;
+    else if (s.daysSince < 30)  buckets[1].count++;
+    else if (s.daysSince < 90)  buckets[2].count++;
+    else if (s.daysSince < 180) buckets[3].count++;
+    else                        buckets[4].count++;
+  }
+
+  const total = outletState.size;
+  const maxCount = Math.max(...buckets.map(b => b.count), 1);
+
+  const html = buckets.map(b => {
+    const pct = total > 0 ? (b.count / total * 100) : 0;
+    return `<div class="mb-2">
+      <div class="flex items-center justify-between mb-1">
+        <div class="flex-1 min-w-0">
+          <span class="text-slate-900 font-medium text-xs">${b.label}</span>
+          <span class="text-[10px] text-slate-400 ml-1">${b.desc}</span>
+        </div>
+        <div class="text-right ml-2">
+          <span class="font-semibold text-slate-900 tabular-nums text-sm">${b.count.toLocaleString()}</span>
+          <span class="text-[10px] text-slate-500 ml-1 tabular-nums">${pct.toFixed(1)}%</span>
+        </div>
+      </div>
+      <div class="h-2 bg-slate-100 rounded overflow-hidden">
+        <div class="h-2 ${b.color} rounded" style="width: ${(b.count / maxCount * 100).toFixed(0)}%"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const totalText = `<div class="mt-1 pt-1.5 border-t border-slate-100 text-[10px] text-slate-500 flex justify-between">
+    <span>Total outlets in scope</span>
+    <span class="font-semibold tabular-nums">${total.toLocaleString()}</span>
+  </div>`;
+
+  document.getElementById('lifecycle-bars').innerHTML = html + totalText;
+}
+
+function renderQuadrantCompact(rows) {
+  const grid = {};
+  for (const p of ['High', 'Mid', 'Low']) for (const h of ['Low', 'Mid', 'High']) {
+    grid[`${p}P_${h}H`] = 0;
+  }
+  for (const r of rows) if (grid[r.quadrant] != null) grid[r.quadrant]++;
+  const total = Object.values(grid).reduce((s, x) => s + x, 0) || 1;
+  const colorOf = q => {
+    const p = q.startsWith('High') ? 2 : q.startsWith('Mid') ? 1 : 0;
+    const h = q.endsWith('HighH') ? 2 : q.endsWith('MidH') ? 1 : 0;
+    const score = p + h;
+    if (score >= 3) return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+    if (score === 2) return 'bg-amber-50 text-amber-800 border-amber-200';
+    if (score === 1) return 'bg-orange-50 text-orange-800 border-orange-200';
+    return 'bg-rose-50 text-rose-800 border-rose-200';
+  };
+  const labelOf = q => {
+    const map = {
+      HighP_LowH: 'Protect', HighP_MidH: 'Good', HighP_HighH: '⭐ Star',
+      MidP_LowH: 'Risk',    MidP_MidH: 'Core',   MidP_HighH: 'Stable',
+      LowP_LowH: 'Under',   LowP_MidH: 'Develop',LowP_HighH: 'Diagnose',
+    };
+    return map[q] || '';
+  };
+  const cells = [];
+  for (const p of ['High', 'Mid', 'Low']) {
+    for (const h of ['Low', 'Mid', 'High']) {
+      const q = `${p}P_${h}H`;
+      const n = grid[q], pct = (n / total * 100).toFixed(0);
+      cells.push(`<div class="px-1 py-2 rounded border ${colorOf(q)}" title="${p} Perf · ${h} Health">
+        <div class="font-bold text-base leading-none">${n}</div>
+        <div class="text-[10px] mt-0.5 opacity-90">${labelOf(q)}</div>
+        <div class="text-[9px] opacity-60 mt-0.5">${pct}%</div>
+      </div>`);
+    }
+  }
+  document.getElementById('quadrant-grid').innerHTML = cells.join('');
+}
+
+// ============================================================
+// OUTLET TABLE
+// ============================================================
+function renderOutletTable() {
+  const rows = applyFilters(getAllRows());
+  // Limit to latest month per outlet for table view
+  const monthsAll = uniq(rows.map(r => r.kpi_month).filter(Boolean)).sort();
+  const curMonth = APP.filter.month || monthsAll[monthsAll.length - 1];
+  let view = rows.filter(r => r.kpi_month === curMonth);
+
+  const search = (document.getElementById('outlet-search')?.value || '').toLowerCase();
+  if (search) {
+    view = view.filter(r => (r.customer_code + ' ' + (r.shop_name || '')).toLowerCase().includes(search));
+  }
+
+  // Sort
+  const sortKey = document.getElementById('outlet-sort')?.value || 'expected_uplift_thb_desc';
+  const [field, dir] = sortKey.split(/_(asc|desc)$/);
+  const m = dir === 'desc' ? -1 : 1;
+  view.sort((a, b) => {
+    const av = a[field] ?? -Infinity, bv = b[field] ?? -Infinity;
+    return (av - bv) * m;
+  });
+
+  // Pagination
+  const total = view.length;
+  const totalPages = Math.max(1, Math.ceil(total / APP.outletPageSize));
+  APP.outletPage = Math.min(APP.outletPage, totalPages - 1);
+  const start = APP.outletPage * APP.outletPageSize;
+  const page = view.slice(start, start + APP.outletPageSize);
+
+  // Headers
+  const cols = [
+    ['Shop Code', 'customer_code'],
+    ['Shop Name', 'shop_name'],
+    ['Salesman', 'salesman_code'],
+    ['Sales', 'sales', 'money', 'right'],
+    ['Active', 'active'],
+    ['Drop', 'drop_size', 'money', 'right'],
+    ['SKU', 'sku_per_outlet', 'num', 'right'],
+    ['Strike', 'strike_rate', 'pct', 'right'],
+    ['PFS', 'pfs_score', 'num1', 'right'],
+    ['F', 'f_planned'],
+    ['Days', 'day_since_last_sales', 'num', 'right'],
+    ['Perf', 'performance_score', 'num1', 'right'],
+    ['Health', 'health_score', 'num1', 'right'],
+    ['Action', 'action_reason'],
+    ['Uplift', 'expected_uplift_thb', 'money', 'right'],
+  ];
+  document.getElementById('outlet-table-head').innerHTML =
+    cols.map(c => `<th class="${c[3] === 'right' ? 'num-right' : 'text-left'} px-3 py-2">${c[0]}</th>`).join('');
+
+  document.getElementById('outlet-table-body').innerHTML = page.map(r => {
+    return `<tr>${cols.map(c => {
+      const v = r[c[1]];
+      let txt;
+      if (c[2] === 'money') txt = Fmt.money(v);
+      else if (c[2] === 'pct') txt = Fmt.pct(v);
+      else if (c[2] === 'num1') txt = Fmt.num1(v);
+      else if (c[2] === 'num') txt = Fmt.num(v);
+      else txt = v ?? '—';
+      return `<td class="${c[3] === 'right' ? 'num-right' : ''} px-3 py-2">${txt}</td>`;
+    }).join('')}</tr>`;
+  }).join('');
+
+  document.getElementById('outlet-count').textContent = `${total.toLocaleString()} outlets (${curMonth})`;
+  document.getElementById('outlet-page-info').textContent = `Page ${APP.outletPage + 1} of ${totalPages}`;
+  document.getElementById('outlet-prev').disabled = APP.outletPage === 0;
+  document.getElementById('outlet-next').disabled = APP.outletPage >= totalPages - 1;
+}
+
+// ============================================================
+// ACTION TAB
+// ============================================================
+function renderActions(rows) {
+  const months = uniq(rows.map(r => r.kpi_month).filter(Boolean)).sort();
+  const curMonth = APP.filter.month || months[months.length - 1];
+  const cur = rows.filter(r => r.kpi_month === curMonth && r.primary_action !== 'A00_no_action');
+
+  // Summary by action
+  const groups = groupBy(cur, r => r.primary_action);
+  const summary = [...groups.entries()].map(([code, rs]) => ({
+    code, name: CONFIG.actions[code]?.name || code,
+    count: rs.length,
+    uplift: sum(rs.map(r => r.expected_uplift_thb)),
+    confidence: rs[0]?.uplift_confidence || '—',
+  })).sort((a, b) => Math.abs(b.uplift) - Math.abs(a.uplift));
+
+  document.getElementById('action-summary').innerHTML = summary.map(s => `
+    <div class="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
+      <div>
+        <div class="font-medium text-slate-900">${s.name}</div>
+        <div class="text-xs text-slate-500">${s.count} outlets · ${s.confidence} confidence</div>
+      </div>
+      <div class="text-right ${s.uplift >= 0 ? 'text-emerald-600' : 'text-rose-500'} font-semibold">
+        ${Fmt.money(s.uplift)}
+      </div>
+    </div>
+  `).join('') || '<p class="text-slate-500 italic">No actions in current scope</p>';
+
+  // Top uplift outlets
+  const top = [...cur].sort((a, b) => b.expected_uplift_thb - a.expected_uplift_thb).slice(0, 10);
+  document.getElementById('top-uplift-list').innerHTML = top.map(r => `
+    <div class="flex items-center justify-between py-1.5 px-2 hover:bg-slate-50 rounded">
+      <div>
+        <div class="text-slate-900">${r.shop_name}</div>
+        <div class="text-xs text-slate-500">${r.customer_code} · ${r.salesman_code || '—'} · ${r.action_reason}</div>
+      </div>
+      <div class="text-right text-emerald-600 font-semibold text-sm">${Fmt.money(r.expected_uplift_thb)}</div>
+    </div>
+  `).join('') || '<p class="text-slate-500 italic">No outlets</p>';
+
+  // Action table - top 50
+  const tableRows = [...cur].sort((a, b) => Math.abs(b.expected_uplift_thb) - Math.abs(a.expected_uplift_thb)).slice(0, 50);
+  document.getElementById('action-table-body').innerHTML = tableRows.map(r => `
+    <tr>
+      <td class="px-3 py-2"><div class="font-medium">${r.shop_name}</div><div class="text-xs text-slate-500">${r.customer_code}</div></td>
+      <td class="px-3 py-2">${r.salesman_code || '—'}</td>
+      <td class="px-3 py-2">${r.action_reason}</td>
+      <td class="num-right px-3 py-2 ${r.expected_uplift_thb >= 0 ? 'text-emerald-600' : 'text-rose-500'} font-medium">${Fmt.money(r.expected_uplift_thb)}</td>
+      <td class="px-3 py-2"><span class="badge ${r.uplift_confidence === 'High' ? 'b-green' : r.uplift_confidence === 'Medium' ? 'b-amber' : 'b-slate'}">${r.uplift_confidence}</span></td>
+      <td class="num-right px-3 py-2">${Fmt.num1(r.performance_score)}</td>
+      <td class="num-right px-3 py-2">${Fmt.num1(r.health_score)}</td>
+    </tr>
+  `).join('');
+}
+
+// ============================================================
+// MONTHLY TREND TAB
+// ============================================================
+function renderTrend() {
+  const rows = applyFilters(getAllRows());
+  const level = document.getElementById('trend-level')?.value || 'salesman';
+  let groupKeys;
+  if (level === 'dc') groupKeys = ['dc_code'];
+  else if (level === 'channel') groupKeys = ['dc_code', 'channel'];
+  else groupKeys = ['dc_code', 'channel', 'salesman_code'];
+
+  const keyFn = r => groupKeys.map(k => r[k]).join('|');
+
+  // Build month-level aggregates
+  const allKeys = uniq(rows.map(keyFn));
+  const allMonths = uniq(rows.map(r => r.kpi_month).filter(Boolean)).sort();
+
+  const grouped = groupBy(rows, r => `${keyFn(r)}__${r.kpi_month}`);
+  const aggRows = [];
+  for (const [k, rs] of grouped) {
+    const sales = sum(rs.map(r => r.sales));
+    const active = sum(rs.map(r => r.active));
+    const bills = sum(rs.map(r => r.n_invoices));
+    const visit = sum(rs.map(r => r.visit_count));
+    const succ = sum(rs.map(r => r.visit_successful_count));
+    const planned = sum(rs.map(r => r.visit_planned_count));
+    const extra = sum(rs.map(r => r.visit_extra_count));
+    const onplan = sum(rs.map(r => r.visit_onplan_count));
+    const coverage = uniq(rs.filter(r => r.visit_onplan_count > 0).map(r => r.customer_code)).length;
+    const uplift = sum(rs.filter(r => r.primary_action !== 'A00_no_action').map(r => r.expected_uplift_thb));
+    const r0 = rs[0];
+    const [grpId, month] = k.split('__');
+    const grpVals = grpId.split('|');
+    const row = {};
+    groupKeys.forEach((g, i) => row[g] = grpVals[i]);
+    row.kpi_month = month;
+    row.sales = sales;
+    row.active = active;
+    row.n_outlets = uniq(rs.map(r => r.customer_code)).length;
+    row.coverage = coverage;
+    row.aso_pct = coverage > 0 ? active / coverage : null;
+    row.drop_size = bills > 0 ? sales / bills : null;
+    row.strike_rate = visit > 0 ? succ / visit : null;
+    row.extra_pct = planned > 0 ? extra / planned : null;
+    row.avg_pfs = mean(rs.map(r => r.pfs_score).filter(x => x != null));
+    row.uplift_pipeline = uplift;
+    aggRows.push(row);
+  }
+
+  // Sort by entity then month
+  aggRows.sort((a, b) => groupKeys.map(g => (a[g] || '').toString().localeCompare((b[g] || '').toString()))
+                               .find(x => x !== 0) || a.kpi_month.localeCompare(b.kpi_month));
+
+  // Compute MoM% within entity
+  const entityKey = r => groupKeys.map(g => r[g]).join('|');
+  const byEntity = groupBy(aggRows, entityKey);
+  for (const [k, rs] of byEntity) {
+    rs.sort((a, b) => a.kpi_month.localeCompare(b.kpi_month));
+    for (let i = 0; i < rs.length; i++) {
+      if (i === 0) { rs[i].sales_mom_pct = null; continue; }
+      const prev = rs[i - 1].sales;
+      rs[i].sales_mom_pct = prev > 0 ? (rs[i].sales - prev) / prev * 100 : null;
+    }
+  }
+
+  // Add monthly totals
+  const totalRows = allMonths.map(mo => {
+    const ms = rows.filter(r => r.kpi_month === mo);
+    const sales = sum(ms.map(r => r.sales));
+    const active = sum(ms.map(r => r.active));
+    const bills = sum(ms.map(r => r.n_invoices));
+    const visit = sum(ms.map(r => r.visit_count));
+    const succ = sum(ms.map(r => r.visit_successful_count));
+    const planned = sum(ms.map(r => r.visit_planned_count));
+    const extra = sum(ms.map(r => r.visit_extra_count));
+    const coverage = uniq(ms.filter(r => r.visit_onplan_count > 0).map(r => r.customer_code)).length;
+    const uplift = sum(ms.filter(r => r.primary_action !== 'A00_no_action').map(r => r.expected_uplift_thb));
+    return {
+      total: 'TOTAL', kpi_month: mo, sales, active,
+      n_outlets: uniq(ms.map(r => r.customer_code)).length,
+      coverage,
+      aso_pct: coverage > 0 ? active / coverage : null,
+      drop_size: bills > 0 ? sales / bills : null,
+      strike_rate: visit > 0 ? succ / visit : null,
+      extra_pct: planned > 0 ? extra / planned : null,
+      avg_pfs: mean(ms.map(r => r.pfs_score).filter(x => x != null)),
+      uplift_pipeline: uplift,
+    };
+  });
+  totalRows.sort((a, b) => a.kpi_month.localeCompare(b.kpi_month));
+  for (let i = 0; i < totalRows.length; i++) {
+    if (i === 0) { totalRows[i].sales_mom_pct = null; continue; }
+    const prev = totalRows[i - 1].sales;
+    totalRows[i].sales_mom_pct = prev > 0 ? (totalRows[i].sales - prev) / prev * 100 : null;
+  }
+
+  // Render
+  const headers = [...groupKeys.map(k => k.replace('_', ' ').toUpperCase()),
+                   'Month', 'Sales', 'Active', 'Coverage', '%ASO',
+                   'Drop', 'Strike%', '%Extra', 'PFS', 'Uplift', 'MoM%'];
+  document.getElementById('trend-table-head').innerHTML =
+    headers.map((h, i) => `<th class="${i >= groupKeys.length + 1 ? 'num-right' : 'text-left'} px-3 py-2">${h}</th>`).join('');
+
+  const renderRow = (r, isTotal = false) => `
+    <tr class="${isTotal ? 'bg-slate-50 font-semibold' : ''}">
+      ${groupKeys.map(g => `<td class="px-3 py-1.5">${r[g] ?? '—'}</td>`).join('')}
+      <td class="px-3 py-1.5">${r.kpi_month}</td>
+      <td class="num-right px-3 py-1.5">${Fmt.money(r.sales)}</td>
+      <td class="num-right px-3 py-1.5">${Fmt.num(r.active)}</td>
+      <td class="num-right px-3 py-1.5">${Fmt.num(r.coverage)}</td>
+      <td class="num-right px-3 py-1.5">${Fmt.pct(r.aso_pct)}</td>
+      <td class="num-right px-3 py-1.5">${Fmt.money(r.drop_size)}</td>
+      <td class="num-right px-3 py-1.5">${Fmt.pct(r.strike_rate)}</td>
+      <td class="num-right px-3 py-1.5">${Fmt.pct(r.extra_pct)}</td>
+      <td class="num-right px-3 py-1.5">${Fmt.num1(r.avg_pfs)}</td>
+      <td class="num-right px-3 py-1.5 ${r.uplift_pipeline >= 0 ? 'text-emerald-600' : 'text-rose-500'}">${Fmt.money(r.uplift_pipeline)}</td>
+      <td class="num-right px-3 py-1.5 ${r.sales_mom_pct == null ? 'text-slate-400' : r.sales_mom_pct >= 0 ? 'text-emerald-600' : 'text-rose-500'}">${r.sales_mom_pct == null ? '—' : Fmt.signed(r.sales_mom_pct)}</td>
+    </tr>
+  `;
+
+  const bodyHTML = aggRows.map(r => renderRow(r)).join('') +
+                   totalRows.map(r => {
+                     const t = {...r};
+                     groupKeys.forEach(g => t[g] = 'TOTAL');
+                     return renderRow(t, true);
+                   }).join('');
+  document.getElementById('trend-table-body').innerHTML = bodyHTML;
+}
+
+// ============================================================
+// EXPORT FUNCTIONS
+// ============================================================
+function exportCSV() {
+  const allRows = getAllRows();
+  if (allRows.length === 0) {
+    Swal.fire({ icon: 'info', title: 'No data to export' }); return;
+  }
+  // Convert to CSV
+  const cols = Object.keys(allRows[0]);
+  const lines = [cols.join(',')];
+  for (const r of allRows) {
+    lines.push(cols.map(c => {
+      const v = r[c];
+      if (v == null) return '';
+      const s = String(v);
+      return s.includes(',') || s.includes('"') ? `"${s.replace(/"/g, '""')}"` : s;
+    }).join(','));
+  }
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `fact_outlet_monthly_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  Swal.fire({ icon: 'success', title: 'CSV exported', timer: 1500, showConfirmButton: false });
+}
+
+async function exportExcel() {
+  // Use ALL rows (not filtered) so Sheet 4 Monthly Trend includes all channels/salesmen
+  // Filter only applies in-app, not in Excel deliverable
+  const allRows = getAllRows();
+  if (allRows.length === 0) {
+    Swal.fire({ icon: 'info', title: 'No data to export' }); return;
+  }
+
+  Swal.fire({ title: 'Building Excel...', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
+  await sleep(50);
+
+  // ----- Pre-compute outlet lifecycle (as of latest month) -----
+  const monthsAll = uniq(allRows.map(r => r.kpi_month).filter(Boolean)).sort();
+  const latestMoGlobal = monthsAll[monthsAll.length - 1];
+  const outletLifecycle = new Map();
+  for (const r of allRows) {
+    if (!outletLifecycle.has(r.customer_code)) {
+      outletLifecycle.set(r.customer_code, {
+        activeLatest: false,
+        days: r.day_since_last_sales ?? 9999,
+        dc: r.dc_code, channel: r.channel, salesman: r.salesman_code,
+      });
+    }
+    const s = outletLifecycle.get(r.customer_code);
+    if (r.kpi_month === latestMoGlobal && r.active === 1) s.activeLatest = true;
+    if (r.day_since_last_sales != null && r.day_since_last_sales < s.days) s.days = r.day_since_last_sales;
+    // Always keep the most-recent salesman/channel/dc assignment
+    if (r.kpi_month === latestMoGlobal) {
+      s.dc = r.dc_code; s.channel = r.channel; s.salesman = r.salesman_code;
+    }
+  }
+  const classifyLifecycle = s => {
+    if (s.activeLatest) return 'Active';
+    if (s.days < 30) return 'Just Inactive';
+    if (s.days < 90) return 'Dormant';
+    if (s.days < 180) return 'Long Dormant';
+    return 'Lost';
+  };
+  // Tag each fact row with its outlet's lifecycle band
+  for (const r of allRows) {
+    const s = outletLifecycle.get(r.customer_code);
+    r.lifecycle_band = s ? classifyLifecycle(s) : 'Unknown';
+  }
+
+  const wb = XLSX.utils.book_new();
+
+  // Sheet 1: Outlet Database
+  const s1cols = ['kpi_month', 'dc_code', 'channel', 'salesman_code', 'rsm', 'asm',
+                  'customer_code', 'shop_name', 'shop_segment', 'shop_type',
+                  'sales', 'active', 'n_invoices', 'drop_size', 'sku_per_outlet',
+                  'visit_count', 'visit_planned_count', 'visit_onplan_count',
+                  'visit_extra_count', 'visit_successful_count',
+                  'strike_rate', 'extra_pct', 'tc1_pct', 'tc2_pct', 'tc3_pct', 'tc_avg',
+                  'pfs_score', 'f_planned', 'f_source', 'visit_compliance',
+                  'day_since_last_sales', 'lifecycle_band',
+                  'sales_mom_pct', 'sales_yoy_pct', 'sales_ytd',
+                  'performance_score', 'health_score', 'quadrant',
+                  'primary_action', 'action_reason', 'expected_uplift_thb', 'uplift_confidence'];
+  const s1Data = [s1cols.map(c => c.replace(/_/g, ' '))];
+  for (const r of allRows) s1Data.push(s1cols.map(c => r[c] ?? ''));
+  const ws1 = XLSX.utils.aoa_to_sheet(s1Data);
+  XLSX.utils.book_append_sheet(wb, ws1, '1_Outlet_Database');
+
+  // Sheet 2: Snapshot (latest month roll-up)
+  const months = uniq(allRows.map(r => r.kpi_month).filter(Boolean)).sort();
+  const latestMo = months[months.length - 1];
+  const cur = allRows.filter(r => r.kpi_month === latestMo);
+  const s2Data = [[`Snapshot Roll-up | Latest Month: ${latestMo}`], []];
+  // Track which (row, col) cells should be formatted as decimal
+  const s2DecimalCells = []; // [{r, c, format}]
+  const s2HeaderCols = ['Sales', 'Active', 'N Outlets', 'Coverage', '%ASO',
+                        'N Invoices', 'Drop', 'Visit Call', 'Visit Planned',
+                        'Strike Rate', '%Extra', 'PFS Avg', 'SKU/Outlet Avg',
+                        'Visit Compliance', 'Uplift'];
+
+  const buildSection = (df, groupCols, title) => {
+    s2Data.push([title]);
+    s2Data.push([...groupCols, ...s2HeaderCols]);
+    const grouped = groupBy(df, r => groupCols.map(c => r[c]).join('|'));
+    const rows = [];
+    for (const [k, rs] of grouped) {
+      const keys = k.split('|');
+      const sales = sum(rs.map(r => r.sales));
+      const active = sum(rs.map(r => r.active));
+      const bills = sum(rs.map(r => r.n_invoices));
+      const visit = sum(rs.map(r => r.visit_count));
+      const planned = sum(rs.map(r => r.visit_planned_count));
+      const succ = sum(rs.map(r => r.visit_successful_count));
+      const extra = sum(rs.map(r => r.visit_extra_count));
+      const coverage = uniq(rs.filter(r => r.visit_onplan_count > 0).map(r => r.customer_code)).length;
+      const n_outlets = uniq(rs.map(r => r.customer_code)).length;
+      const uplift = sum(rs.filter(r => r.primary_action !== 'A00_no_action').map(r => r.expected_uplift_thb));
+      const sku_avg = n_outlets > 0 ? sum(rs.map(r => r.sku_per_outlet || 0)) / n_outlets : 0;
+      rows.push([
+        ...keys, sales, active, n_outlets, coverage,
+        coverage > 0 ? active / coverage : 0,
+        bills, bills > 0 ? sales / bills : 0, visit, planned,
+        visit > 0 ? succ / visit : 0,
+        planned > 0 ? extra / planned : 0,
+        mean(rs.map(r => r.pfs_score).filter(x => x != null)) || 0,
+        sku_avg,
+        mean(rs.map(r => r.visit_compliance)) || 0,
+        uplift,
+      ]);
+    }
+    // Total row
+    const sales = sum(df.map(r => r.sales));
+    const active = sum(df.map(r => r.active));
+    const bills = sum(df.map(r => r.n_invoices));
+    const visit = sum(df.map(r => r.visit_count));
+    const planned = sum(df.map(r => r.visit_planned_count));
+    const succ = sum(df.map(r => r.visit_successful_count));
+    const extra = sum(df.map(r => r.visit_extra_count));
+    const coverage = uniq(df.filter(r => r.visit_onplan_count > 0).map(r => r.customer_code)).length;
+    const n_outlets = uniq(df.map(r => r.customer_code)).length;
+    const uplift = sum(df.filter(r => r.primary_action !== 'A00_no_action').map(r => r.expected_uplift_thb));
+    const sku_avg = n_outlets > 0 ? sum(df.map(r => r.sku_per_outlet || 0)) / n_outlets : 0;
+    rows.push([
+      ...groupCols.map(() => 'TOTAL'), sales, active, n_outlets, coverage,
+      coverage > 0 ? active / coverage : 0,
+      bills, bills > 0 ? sales / bills : 0, visit, planned,
+      visit > 0 ? succ / visit : 0,
+      planned > 0 ? extra / planned : 0,
+      mean(df.map(r => r.pfs_score).filter(x => x != null)) || 0,
+      sku_avg,
+      mean(df.map(r => r.visit_compliance)) || 0,
+      uplift,
+    ]);
+    // Record decimal cells (PFS Avg at offset+11, SKU/Outlet Avg at offset+12, Compliance at offset+13)
+    const headerRowIdx = s2Data.length - 1; // header row just pushed
+    const dataStartIdx = headerRowIdx + 1;
+    for (let i = 0; i < rows.length; i++) {
+      const rowIdx = dataStartIdx + i;
+      const baseCol = groupCols.length;
+      // %ASO at baseCol+4 (percentage)
+      s2DecimalCells.push({ r: rowIdx, c: baseCol + 4, format: '0.0%' });
+      // Strike Rate, %Extra at baseCol+9, baseCol+10
+      s2DecimalCells.push({ r: rowIdx, c: baseCol + 9, format: '0.0%' });
+      s2DecimalCells.push({ r: rowIdx, c: baseCol + 10, format: '0.0%' });
+      // PFS Avg at baseCol+11, SKU at baseCol+12 (decimal)
+      s2DecimalCells.push({ r: rowIdx, c: baseCol + 11, format: '0.0' });
+      s2DecimalCells.push({ r: rowIdx, c: baseCol + 12, format: '0.0' });
+      // Visit Compliance at baseCol+13 (pct)
+      s2DecimalCells.push({ r: rowIdx, c: baseCol + 13, format: '0.0%' });
+    }
+    s2Data.push(...rows);
+    s2Data.push([]);
+  };
+  buildSection(cur, ['dc_code'], 'BY DC');
+  buildSection(cur, ['dc_code', 'channel'], 'BY CHANNEL × DC');
+  buildSection(cur, ['dc_code', 'channel', 'salesman_code'], 'BY SALESMAN × DC');
+  const ws2 = XLSX.utils.aoa_to_sheet(s2Data);
+  // Apply cell formats
+  for (const cell of s2DecimalCells) {
+    const ref = XLSX.utils.encode_cell({ r: cell.r, c: cell.c });
+    if (ws2[ref] && typeof ws2[ref].v === 'number') ws2[ref].z = cell.format;
+  }
+  XLSX.utils.book_append_sheet(wb, ws2, '2_Snapshot_Latest');
+
+  // Sheet 3: Scenario Builder (placeholder - simple version with formulas referencing Sheet1)
+  const ws3Data = [
+    ['Scenario Builder'],
+    ['Adjust inputs to simulate. Open Sheet 1 to see filtered details.'],
+    [],
+    ['INPUT'],
+    ['Filter Month', latestMo],
+    ['Filter DC', ''],
+    ['Filter Salesman (or ALL)', 'ALL'],
+    ['Action Code', 'A01_promote_f1_to_f2'],
+    [],
+    ['IMPACT (filtered subset)'],
+    ['KPI', 'Before', 'After (est)', 'Δ'],
+    ['Sales', '', '', ''],
+    ['Active Outlets', '', '', ''],
+    ['Uplift (THB/mo)', '', '', ''],
+    [],
+    ['Use Sheet 1 filters for detailed analysis.'],
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ws3Data), '3_Scenario_Builder');
+
+  // Sheet 4: Monthly Trend
+  const s4Data = [[`Monthly Trend | ${months[0]} → ${months[months.length-1]}`], []];
+  const s4DecimalCells = [];
+  const buildTrend = (df, groupCols, title) => {
+    s4Data.push([title]);
+    s4Data.push([...groupCols, 'Month', 'Sales', 'Active', 'Coverage', '%ASO',
+                 'Drop', 'Strike Rate', '%Extra', 'PFS Avg', 'SKU/Outlet Avg',
+                 'Visit Compliance', 'Uplift', 'Sales MoM%']);
+    // Group by entity x month
+    const entityMonthKey = r => groupCols.map(c => r[c]).join('|') + '__' + r.kpi_month;
+    const grouped = groupBy(df, entityMonthKey);
+    const aggRows = [];
+    for (const [k, rs] of grouped) {
+      const [entKey, mo] = k.split('__');
+      const keys = entKey.split('|');
+      const sales = sum(rs.map(r => r.sales));
+      const active = sum(rs.map(r => r.active));
+      const bills = sum(rs.map(r => r.n_invoices));
+      const visit = sum(rs.map(r => r.visit_count));
+      const planned = sum(rs.map(r => r.visit_planned_count));
+      const succ = sum(rs.map(r => r.visit_successful_count));
+      const extra = sum(rs.map(r => r.visit_extra_count));
+      const coverage = uniq(rs.filter(r => r.visit_onplan_count > 0).map(r => r.customer_code)).length;
+      const n_outlets = uniq(rs.map(r => r.customer_code)).length;
+      const uplift = sum(rs.filter(r => r.primary_action !== 'A00_no_action').map(r => r.expected_uplift_thb));
+      const sku_avg = n_outlets > 0 ? sum(rs.map(r => r.sku_per_outlet || 0)) / n_outlets : 0;
+      aggRows.push({
+        keys, mo, sales, active, coverage,
+        aso: coverage > 0 ? active / coverage : 0,
+        drop: bills > 0 ? sales / bills : 0,
+        strike: visit > 0 ? succ / visit : 0,
+        extra_pct: planned > 0 ? extra / planned : 0,
+        pfs: mean(rs.map(r => r.pfs_score).filter(x => x != null)) || 0,
+        sku: sku_avg,
+        compliance: mean(rs.map(r => r.visit_compliance)) || 0,
+        uplift,
+      });
+    }
+    aggRows.sort((a, b) => a.keys.join('|').localeCompare(b.keys.join('|')) || a.mo.localeCompare(b.mo));
+    // MoM
+    const byEnt = groupBy(aggRows, r => r.keys.join('|'));
+    for (const [k, rs] of byEnt) {
+      for (let i = 0; i < rs.length; i++) {
+        rs[i].mom = i === 0 ? '' : (rs[i - 1].sales > 0 ? (rs[i].sales - rs[i - 1].sales) / rs[i - 1].sales * 100 : '');
+      }
+    }
+    const headerRowIdx = s4Data.length - 1;
+    const dataStartIdx = headerRowIdx + 1;
+    let rowOffset = 0;
+    for (const r of aggRows) {
+      s4Data.push([...r.keys, r.mo, r.sales, r.active, r.coverage, r.aso,
+                   r.drop, r.strike, r.extra_pct, r.pfs, r.sku, r.compliance, r.uplift, r.mom]);
+      const ri = dataStartIdx + rowOffset;
+      const baseCol = groupCols.length;
+      // Month at baseCol, Sales+1, Active+2, Coverage+3, %ASO+4, Drop+5,
+      // Strike+6, %Extra+7, PFS+8, SKU+9, Compliance+10, Uplift+11, MoM+12
+      s4DecimalCells.push({ r: ri, c: baseCol + 4, format: '0.0%' }); // %ASO
+      s4DecimalCells.push({ r: ri, c: baseCol + 6, format: '0.0%' }); // Strike
+      s4DecimalCells.push({ r: ri, c: baseCol + 7, format: '0.0%' }); // %Extra
+      s4DecimalCells.push({ r: ri, c: baseCol + 8, format: '0.0' });  // PFS
+      s4DecimalCells.push({ r: ri, c: baseCol + 9, format: '0.0' });  // SKU
+      s4DecimalCells.push({ r: ri, c: baseCol + 10, format: '0.0%' }); // Compliance
+      s4DecimalCells.push({ r: ri, c: baseCol + 12, format: '+0.0;-0.0' }); // MoM
+      rowOffset++;
+    }
+    // Totals per month
+    for (const mo of months) {
+      const ms = df.filter(r => r.kpi_month === mo);
+      if (ms.length === 0) continue;
+      const sales = sum(ms.map(r => r.sales));
+      const active = sum(ms.map(r => r.active));
+      const bills = sum(ms.map(r => r.n_invoices));
+      const visit = sum(ms.map(r => r.visit_count));
+      const planned = sum(ms.map(r => r.visit_planned_count));
+      const succ = sum(ms.map(r => r.visit_successful_count));
+      const extra = sum(ms.map(r => r.visit_extra_count));
+      const coverage = uniq(ms.filter(r => r.visit_onplan_count > 0).map(r => r.customer_code)).length;
+      const n_outlets = uniq(ms.map(r => r.customer_code)).length;
+      const uplift = sum(ms.filter(r => r.primary_action !== 'A00_no_action').map(r => r.expected_uplift_thb));
+      const sku_avg = n_outlets > 0 ? sum(ms.map(r => r.sku_per_outlet || 0)) / n_outlets : 0;
+      s4Data.push([...groupCols.map(() => 'TOTAL'), mo, sales, active, coverage,
+                   coverage > 0 ? active / coverage : 0,
+                   bills > 0 ? sales / bills : 0,
+                   visit > 0 ? succ / visit : 0,
+                   planned > 0 ? extra / planned : 0,
+                   mean(ms.map(r => r.pfs_score).filter(x => x != null)) || 0,
+                   sku_avg,
+                   mean(ms.map(r => r.visit_compliance)) || 0,
+                   uplift, '']);
+      const ri = dataStartIdx + rowOffset;
+      const baseCol = groupCols.length;
+      s4DecimalCells.push({ r: ri, c: baseCol + 4, format: '0.0%' });
+      s4DecimalCells.push({ r: ri, c: baseCol + 6, format: '0.0%' });
+      s4DecimalCells.push({ r: ri, c: baseCol + 7, format: '0.0%' });
+      s4DecimalCells.push({ r: ri, c: baseCol + 8, format: '0.0' });
+      s4DecimalCells.push({ r: ri, c: baseCol + 9, format: '0.0' });
+      s4DecimalCells.push({ r: ri, c: baseCol + 10, format: '0.0%' });
+      rowOffset++;
+    }
+    s4Data.push([]);
+  };
+  buildTrend(allRows, ['dc_code'], 'BY DC × MONTH');
+  buildTrend(allRows, ['dc_code', 'channel'], 'BY CHANNEL × DC × MONTH');
+  buildTrend(allRows, ['dc_code', 'channel', 'salesman_code'], 'BY SALESMAN × DC × MONTH');
+  const ws4 = XLSX.utils.aoa_to_sheet(s4Data);
+  for (const cell of s4DecimalCells) {
+    const ref = XLSX.utils.encode_cell({ r: cell.r, c: cell.c });
+    if (ws4[ref] && typeof ws4[ref].v === 'number') ws4[ref].z = cell.format;
+  }
+  XLSX.utils.book_append_sheet(wb, ws4, '4_Monthly_Trend');
+
+  // ====================================================
+  // Sheet 5: Outlet Lifecycle
+  // ====================================================
+  const lifeBuckets = ['Active', 'Just Inactive', 'Dormant', 'Long Dormant', 'Lost'];
+  const s5Data = [[`Outlet Lifecycle | As of ${latestMoGlobal}`], []];
+  s5Data.push(['Classification: ',
+               'Active = bought this month',
+               'Just Inactive = <30 days since last sale',
+               'Dormant = 30-89 days (A05 Reactivate target)',
+               'Long Dormant = 90-179 days',
+               'Lost = 180+ days (likely closed)']);
+  s5Data.push([]);
+  const s5PctCells = [];
+
+  const buildLifecycleSection = (groupCols, title) => {
+    s5Data.push([title]);
+    s5Data.push([...groupCols, ...lifeBuckets, 'Total', '%Active', '%Dormant', '%LongDorm', '%Lost']);
+    // Group outlets by selected key
+    const groups = new Map();
+    for (const [code, s] of outletLifecycle) {
+      const keyVals = groupCols.map(c => {
+        if (c === 'dc_code') return s.dc;
+        if (c === 'channel') return s.channel;
+        if (c === 'salesman_code') return s.salesman;
+        return '';
+      });
+      const k = keyVals.join('|');
+      if (!groups.has(k)) {
+        groups.set(k, { keys: keyVals, buckets: Object.fromEntries(lifeBuckets.map(b => [b, 0])) });
+      }
+      groups.get(k).buckets[classifyLifecycle(s)]++;
+    }
+    const headerRowIdx = s5Data.length - 1;
+    const dataStartIdx = headerRowIdx + 1;
+    let rowOffset = 0;
+    // Sort by group for stable output
+    const sortedGroups = [...groups.values()].sort((a, b) =>
+      a.keys.join('|').localeCompare(b.keys.join('|')));
+    for (const g of sortedGroups) {
+      const total = lifeBuckets.reduce((s, b) => s + g.buckets[b], 0);
+      const row = [
+        ...g.keys,
+        ...lifeBuckets.map(b => g.buckets[b]),
+        total,
+        total > 0 ? g.buckets.Active / total : 0,
+        total > 0 ? g.buckets.Dormant / total : 0,
+        total > 0 ? g.buckets['Long Dormant'] / total : 0,
+        total > 0 ? g.buckets.Lost / total : 0,
+      ];
+      s5Data.push(row);
+      const ri = dataStartIdx + rowOffset;
+      const baseCol = groupCols.length + lifeBuckets.length + 1;
+      // %Active, %Dormant, %LongDorm, %Lost
+      for (let i = 0; i < 4; i++) {
+        s5PctCells.push({ r: ri, c: baseCol + i, format: '0.0%' });
+      }
+      rowOffset++;
+    }
+    // Total row (across all groups at this level)
+    const totalBuckets = Object.fromEntries(lifeBuckets.map(b => [b, 0]));
+    for (const g of groups.values()) for (const b of lifeBuckets) totalBuckets[b] += g.buckets[b];
+    const grandTotal = lifeBuckets.reduce((s, b) => s + totalBuckets[b], 0);
+    s5Data.push([
+      ...groupCols.map(() => 'TOTAL'),
+      ...lifeBuckets.map(b => totalBuckets[b]),
+      grandTotal,
+      grandTotal > 0 ? totalBuckets.Active / grandTotal : 0,
+      grandTotal > 0 ? totalBuckets.Dormant / grandTotal : 0,
+      grandTotal > 0 ? totalBuckets['Long Dormant'] / grandTotal : 0,
+      grandTotal > 0 ? totalBuckets.Lost / grandTotal : 0,
+    ]);
+    const totalRi = dataStartIdx + rowOffset;
+    const baseCol = groupCols.length + lifeBuckets.length + 1;
+    for (let i = 0; i < 4; i++) {
+      s5PctCells.push({ r: totalRi, c: baseCol + i, format: '0.0%' });
+    }
+    s5Data.push([]);
+  };
+
+  buildLifecycleSection(['dc_code'], 'BY DC');
+  buildLifecycleSection(['dc_code', 'channel'], 'BY CHANNEL × DC');
+  buildLifecycleSection(['dc_code', 'channel', 'salesman_code'], 'BY SALESMAN × DC');
+
+  const ws5 = XLSX.utils.aoa_to_sheet(s5Data);
+  for (const cell of s5PctCells) {
+    const ref = XLSX.utils.encode_cell({ r: cell.r, c: cell.c });
+    if (ws5[ref] && typeof ws5[ref].v === 'number') ws5[ref].z = cell.format;
+  }
+  XLSX.utils.book_append_sheet(wb, ws5, '5_Outlet_Lifecycle');
+
+  XLSX.writeFile(wb, `Sales_Analytics_${new Date().toISOString().slice(0,10)}.xlsx`);
+  Swal.close();
+  Swal.fire({ icon: 'success', title: 'Excel exported', text: '4 sheets generated', timer: 1500, showConfirmButton: false });
+}
+
+// ============================================================
+// EVENT LISTENERS
+// ============================================================
+function init() {
+  // Drag & drop
+  const dz = document.getElementById('drop-zone');
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault();
+    dz.classList.remove('drag-over');
+    stageFiles(e.dataTransfer.files);
+  });
+  document.getElementById('file-input').addEventListener('change', e => stageFiles(e.target.files));
+  document.getElementById('btn-clear-files').addEventListener('click', () => { APP.staged = []; renderStagedFiles(); });
+  document.getElementById('btn-process').addEventListener('click', processStagedFiles);
+
+  // Tabs
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+      document.getElementById('tab-' + b.dataset.tab).classList.remove('hidden');
+    });
+  });
+
+  // Filters
+  ['filter-dc', 'filter-channel', 'filter-salesman', 'filter-month'].forEach(id => {
+    document.getElementById(id).addEventListener('change', e => {
+      const key = id.replace('filter-', '');
+      APP.filter[key] = e.target.value;
+      renderDashboard();
+    });
+  });
+  document.getElementById('btn-reset-filter').addEventListener('click', () => {
+    APP.filter = { dc: '', channel: '', salesman: '', month: '' };
+    refreshFilters();
+  });
+
+  // Outlet table controls
+  document.getElementById('outlet-sort').addEventListener('change', renderOutletTable);
+  document.getElementById('outlet-search').addEventListener('input', () => { APP.outletPage = 0; renderOutletTable(); });
+  document.getElementById('outlet-prev').addEventListener('click', () => { APP.outletPage--; renderOutletTable(); });
+  document.getElementById('outlet-next').addEventListener('click', () => { APP.outletPage++; renderOutletTable(); });
+
+  // Trend level
+  document.getElementById('trend-level').addEventListener('change', renderTrend);
+
+  // Export
+  document.getElementById('btn-export-csv').addEventListener('click', exportCSV);
+  document.getElementById('btn-export-excel').addEventListener('click', exportExcel);
+
+  // Demo data
+  document.getElementById('btn-load-demo').addEventListener('click', loadDemoData);
+
+  // Settings: sum checks + apply/reset
+  ['perf-w', 'health-w'].forEach(cls => {
+    document.querySelectorAll('.' + cls).forEach(el => el.addEventListener('input', updateWeightSums));
+  });
+  document.getElementById('btn-apply-settings').addEventListener('click', applySettings);
+  document.getElementById('btn-reset-settings').addEventListener('click', resetSettings);
+
+  // Initial load
+  renderDCList().then(() => refreshFilters());
+}
+
+// ============================================================
+// SETTINGS — recompute scoring + actions without re-upload
+// ============================================================
+function updateWeightSums() {
+  const ps = [...document.querySelectorAll('.perf-w')].reduce((s, el) => s + (parseFloat(el.value) || 0), 0);
+  const hs = [...document.querySelectorAll('.health-w')].reduce((s, el) => s + (parseFloat(el.value) || 0), 0);
+  document.getElementById('perf-sum').textContent = ps.toFixed(2);
+  document.getElementById('health-sum').textContent = hs.toFixed(2);
+  document.getElementById('perf-sum-warn').classList.toggle('hidden', Math.abs(ps - 1) < 0.001);
+  document.getElementById('health-sum-warn').classList.toggle('hidden', Math.abs(hs - 1) < 0.001);
+}
+
+function getSettingsValues() {
+  const cfg = {
+    perf_w: {}, health_w: {}, action: {}, quad: {},
+  };
+  document.querySelectorAll('.perf-w').forEach(el => cfg.perf_w[el.dataset.key] = parseFloat(el.value) || 0);
+  document.querySelectorAll('.health-w').forEach(el => cfg.health_w[el.dataset.key] = parseFloat(el.value) || 0);
+  document.querySelectorAll('.act-param').forEach(el => cfg.action[el.dataset.key] = parseFloat(el.value) || 0);
+  document.querySelectorAll('.quad-param').forEach(el => cfg.quad[el.dataset.key] = parseFloat(el.value) || 0);
+  return cfg;
+}
+
+function resetSettings() {
+  const defaults = {
+    'perf-w': { value_per_outlet: 0.40, drop_size: 0.35, sku_per_outlet: 0.25 },
+    'health-w': { visit_compliance: 0.30, strike_rate: 0.25, time_compliance: 0.20, pfs_score: 0.15, recency: 0.10 },
+    'act-param': { A01_elasticity: 0.30, A02_elasticity: -0.10, A03_beta: 0.20, A04_gamma: 0.40, A05_days_min: 30, A05_days_max: 90 },
+    'quad-param': { p_lower: 0.33, p_upper: 0.67 },
+  };
+  for (const cls in defaults) {
+    for (const key in defaults[cls]) {
+      const el = document.querySelector(`.${cls}[data-key="${key}"]`);
+      if (el) el.value = defaults[cls][key];
+    }
+  }
+  updateWeightSums();
+}
+
+async function applySettings() {
+  const cfg = getSettingsValues();
+  const ps = Object.values(cfg.perf_w).reduce((s, x) => s + x, 0);
+  const hs = Object.values(cfg.health_w).reduce((s, x) => s + x, 0);
+  if (Math.abs(ps - 1) > 0.01 || Math.abs(hs - 1) > 0.01) {
+    Swal.fire({ icon: 'error', title: 'Weights must sum to 1.00',
+      html: `Performance sum: ${ps.toFixed(2)}<br>Health sum: ${hs.toFixed(2)}` });
+    return;
+  }
+
+  Swal.fire({ title: 'Recomputing scoring + uplift...', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
+  await sleep(50);
+
+  try {
+    for (const dc in APP.data) {
+      const rows = APP.data[dc].rows;
+      recomputeScoringAndActions(rows, cfg);
+      await dbSet(dc, { ...APP.data[dc], rows, dc_code: dc, processed_at: new Date().toISOString() });
+    }
+    refreshFilters();
+    Swal.close();
+    Swal.fire({ icon: 'success', title: 'Settings applied', text: 'Scoring + uplift recomputed', timer: 2000 });
+  } catch (err) {
+    console.error(err);
+    Swal.close();
+    Swal.fire({ icon: 'error', title: 'Recompute failed', text: err.message });
+  }
+}
+
+function recomputeScoringAndActions(rows, cfg) {
+  // 1. Group by peer (DC × Channel × Segment × Month), recompute peer medians + ranks
+  const peerKey = r => `${r.dc_code}|${r.channel}|${r.shop_segment}|${r.kpi_month}`;
+  const peerGroups = groupBy(rows, peerKey);
+
+  for (const [k, group] of peerGroups) {
+    // Peer medians for action eligibility + uplift
+    const skuMed = median(group.map(r => r.sku_per_outlet || 0));
+    const pfsMed = median(group.map(r => r.pfs_score).filter(x => x != null));
+    const strikeMed = median(group.map(r => r.strike_rate).filter(x => x != null));
+    const valueMed = median(group.map(r => r.sales).filter(x => x > 0));
+    const dropMed = median(group.map(r => r.drop_size).filter(x => x > 0));
+    for (const r of group) {
+      r._sku_med = skuMed || 0;
+      r._pfs_med = pfsMed || 0;
+      r._strike_med = strikeMed || 0;
+      r._value_med = valueMed || 0;
+      r._drop_med = dropMed || 0;
+    }
+
+    // Performance percentile ranks
+    const valueRanks = percentileRank(group.map(r => r.sales || 0));
+    const dropRanks = percentileRank(group.map(r => r.drop_size || 0));
+    const skuRanks = percentileRank(group.map(r => r.sku_per_outlet || 0));
+
+    for (let i = 0; i < group.length; i++) {
+      // Performance score
+      let pscore = valueRanks[i] * 100 * cfg.perf_w.value_per_outlet +
+                   dropRanks[i] * 100 * cfg.perf_w.drop_size +
+                   skuRanks[i] * 100 * cfg.perf_w.sku_per_outlet;
+      group[i].performance_score = Math.round(pscore * 10) / 10;
+
+      // Health score
+      const r = group[i];
+      const recency = Math.max(0, 90 - Math.min(90, r.day_since_last_sales || 90)) / 90 * 100;
+      let hscore = (r.visit_compliance || 0) * 100 * cfg.health_w.visit_compliance +
+                   (r.strike_rate || 0) * 100 * cfg.health_w.strike_rate +
+                   (r.tc_avg || 0) * 100 * cfg.health_w.time_compliance +
+                   (r.pfs_score || 0) * cfg.health_w.pfs_score +
+                   recency * cfg.health_w.recency;
+      r.health_score = Math.round(hscore * 10) / 10;
+    }
+
+    // Re-band quadrant using new cutpoints
+    const perfPL = quantile(group.map(r => r.performance_score), cfg.quad.p_lower);
+    const perfPU = quantile(group.map(r => r.performance_score), cfg.quad.p_upper);
+    const healthPL = quantile(group.map(r => r.health_score), cfg.quad.p_lower);
+    const healthPU = quantile(group.map(r => r.health_score), cfg.quad.p_upper);
+    for (const r of group) {
+      r.perf_band = r.performance_score <= perfPL ? 'Low' : (r.performance_score >= perfPU ? 'High' : 'Mid');
+      r.health_band = r.health_score <= healthPL ? 'Low' : (r.health_score >= healthPU ? 'High' : 'Mid');
+      r.quadrant = r.perf_band + 'P_' + r.health_band + 'H';
+    }
+  }
+
+  // 2. Re-assign actions + recompute uplift
+  for (const r of rows) {
+    r.primary_action = 'A00_no_action';
+    r.action_reason = '';
+    r.expected_uplift_thb = 0;
+    r.uplift_confidence = '—';
+
+    const order = ['A02_demote_f2_to_f1', 'A05_reactivate', 'A01_promote_f1_to_f2',
+                   'A06_strike_rate_recovery', 'A03_pfs_coaching', 'A04_sku_expansion'];
+    for (const code of order) {
+      let eligible = false;
+      if (code === 'A02_demote_f2_to_f1') {
+        eligible = r.f_planned === 'F2' && (r.visit_compliance || 0) >= 0.8 &&
+                   r.drop_size < r._drop_med * 0.5 && r.drop_size > 0;
+      } else if (code === 'A05_reactivate') {
+        eligible = r.active === 0 && r.day_since_last_sales >= cfg.action.A05_days_min &&
+                   r.day_since_last_sales <= cfg.action.A05_days_max;
+      } else if (code === 'A01_promote_f1_to_f2') {
+        eligible = r.f_planned === 'F1' && r.visit_extra_count >= 1 && (r.strike_rate || 0) >= 0.30;
+      } else if (code === 'A06_strike_rate_recovery') {
+        eligible = r._strike_med > 0 && (r.strike_rate || 0) < r._strike_med && r.visit_count >= 2;
+      } else if (code === 'A03_pfs_coaching') {
+        eligible = r._pfs_med > 0 && (r.pfs_score || 0) < r._pfs_med && r.active === 1;
+      } else if (code === 'A04_sku_expansion') {
+        eligible = r._sku_med > 0 && (r.sku_per_outlet || 0) < r._sku_med && r.active === 1;
+      }
+      if (eligible) {
+        r.primary_action = code;
+        r.action_reason = CONFIG.actions[code].name;
+        r.uplift_confidence = CONFIG.actions[code].confidence;
+        break;
+      }
+    }
+
+    const ac = r.primary_action;
+    if (ac === 'A01_promote_f1_to_f2') {
+      r.expected_uplift_thb = (r.sales || 0) * 1.0 * cfg.action.A01_elasticity;
+    } else if (ac === 'A02_demote_f2_to_f1') {
+      r.expected_uplift_thb = (r.sales || 0) * cfg.action.A02_elasticity;
+    } else if (ac === 'A03_pfs_coaching') {
+      const gap = (r.pfs_score || 0) > 0 ? (r._pfs_med - r.pfs_score) / r.pfs_score : 0;
+      r.expected_uplift_thb = (r.sales || 0) * gap * cfg.action.A03_beta;
+    } else if (ac === 'A04_sku_expansion') {
+      const gap = (r.sku_per_outlet || 0) > 0 ? (r._sku_med - r.sku_per_outlet) / r.sku_per_outlet : 0;
+      r.expected_uplift_thb = (r.sales || 0) * gap * cfg.action.A04_gamma;
+    } else if (ac === 'A05_reactivate') {
+      r.expected_uplift_thb = r._value_med;
+    } else if (ac === 'A06_strike_rate_recovery') {
+      const gap = Math.max(0, r._strike_med - (r.strike_rate || 0));
+      r.expected_uplift_thb = r.visit_count * gap * (r.drop_size || 0);
+    }
+    r.expected_uplift_thb = Math.round(r.expected_uplift_thb * 100) / 100;
+
+    // Clean up temp peer fields so storage stays clean
+    delete r._sku_med; delete r._pfs_med; delete r._strike_med; delete r._value_med; delete r._drop_med;
+  }
+}
+
+// ============================================================
+// DEMO DATA LOADER
+// ============================================================
+async function loadDemoData() {
+  const existing = await dbGet('302');
+  if (existing) {
+    const ok = await Swal.fire({
+      icon: 'info', title: 'DC 302 already loaded',
+      text: 'Demo will replace your existing DC 302 data. Continue?',
+      showCancelButton: true, confirmButtonText: 'Replace with demo',
+    });
+    if (!ok.isConfirmed) return;
+  }
+
+  try {
+    let demo;
+    const el = document.getElementById('demo-data');
+    const txt = el ? el.textContent.trim() : '';
+    const hasEmbedded = txt && !txt.includes('{{DEMO_DATA') && txt.length > 100;
+
+    if (hasEmbedded) {
+      // Embedded mode (local file with bundled demo)
+      Swal.fire({ title: 'Loading demo data...', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
+      await sleep(50);
+      demo = JSON.parse(txt);
+    } else {
+      // Lazy-load mode (production deploy — fetch external JSON)
+      Swal.fire({
+        title: 'Downloading demo data...',
+        html: '<div class="text-xs text-slate-500 mt-2">Fetching DC 302 sample (~21 MB)...<br>First load may take 10-30 seconds</div>',
+        didOpen: () => Swal.showLoading(),
+        allowOutsideClick: false,
+      });
+      const resp = await fetch('./demo_data_302.json');
+      if (!resp.ok) throw new Error(`Failed to fetch demo: HTTP ${resp.status}`);
+      demo = await resp.json();
+    }
+
+    // Convert array-of-arrays back to array-of-objects
+    const cols = demo.columns;
+    const rows = demo.rows.map(arr => {
+      const o = {};
+      for (let i = 0; i < cols.length; i++) o[cols[i]] = arr[i];
+      return o;
+    });
+
+    const months = uniq(rows.map(r => r.kpi_month)).sort();
+    const dc_code = '302';
+    await dbSet(dc_code, {
+      rows, months,
+      processed_at: new Date().toISOString(),
+      n_outlets: uniq(rows.map(r => r.customer_code)).length,
+    });
+    APP.data[dc_code] = { rows, months, n_outlets: uniq(rows.map(r => r.customer_code)).length };
+
+    await renderDCList();
+    refreshFilters();
+    // Switch to overview tab automatically
+    document.querySelectorAll('.tab-btn').forEach(x => x.classList.remove('active'));
+    document.querySelector('[data-tab="overview"]').classList.add('active');
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+    document.getElementById('tab-overview').classList.remove('hidden');
+
+    Swal.close();
+    Swal.fire({
+      icon: 'success', title: 'Demo loaded',
+      html: `<div class="text-sm text-left">
+        <p><b>DC 302</b> — M Prosper Co., Ltd.</p>
+        <p>${rows.length.toLocaleString()} outlet-month rows</p>
+        <p>${months.length} months: ${months[0]} → ${months[months.length-1]}</p>
+        <p>${uniq(rows.map(r => r.customer_code)).length.toLocaleString()} unique outlets</p>
+      </div>`, timer: 3500,
+    });
+  } catch (err) {
+    console.error(err);
+    Swal.close();
+    Swal.fire({ icon: 'error', title: 'Demo load failed', text: err.message });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', init);
+
+</script>
+
+</body>
+</html>
