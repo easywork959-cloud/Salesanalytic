@@ -4197,12 +4197,9 @@ async function loadDemoData() {
         didOpen: () => Swal.showLoading(),
         allowOutsideClick: false,
       });
-      const resp = await fetch('./demo_data_302.json.gz');
+      const resp = await fetch('./demo_data_302.json');
       if (!resp.ok) throw new Error(`Failed to fetch demo: HTTP ${resp.status}`);
-      const ds = new DecompressionStream('gzip');
-        const decompressed = resp.body.pipeThrough(ds);
-        const text = await new Response(decompressed).text();
-        demo = JSON.parse(text);
+      demo = await resp.json();
     }
 
     // Convert array-of-arrays back to array-of-objects
