@@ -19,7 +19,7 @@
         ]
       },
       {
-        "source": "**/demo_data_*.json",
+        "source": "**/demo_data_*.json.gz",
         "headers": [
           {
             "key": "Cache-Control",
