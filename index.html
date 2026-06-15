@@ -80,6 +80,7 @@
     <div class="tab-btn flex-shrink-0" data-tab="overview">📊 Overview</div>
     <div class="tab-btn flex-shrink-0" data-tab="outlets">🏪 Outlets</div>
     <div class="tab-btn flex-shrink-0" data-tab="actions">🎯 Actions</div>
+    <div class="tab-btn flex-shrink-0" data-tab="diagnostics">🔬 Diagnostics</div>
     <div class="tab-btn flex-shrink-0" data-tab="trend">📈 Trend</div>
     <div class="tab-btn flex-shrink-0" data-tab="settings">⚙️ Settings</div>
   </div>
@@ -182,6 +183,18 @@
       </div>
     </div>
 
+    <!-- ============ Guardrail badges (North Star guardrails) ============ -->
+    <!-- Flex container — slots auto-flow. Add additional badges later by appending
+         a child div with id `guardrail-XXX`; layout adapts via gap-2 (no hard-coded
+         positions or width). Currently: slot 1 = Elasticity. Slot 2 reserved for
+         %Promotion (future Diagnostic per F2_Integration_Map sec 4). -->
+    <div class="flex items-center flex-wrap gap-2 mb-3" id="guardrail-row">
+      <span class="text-[10px] text-slate-400 uppercase tracking-wider mr-1">Guardrail</span>
+      <div id="guardrail-elasticity"></div>
+      <div id="guardrail-promotion"></div>
+      <!-- future badges go here as additional <div id="guardrail-*"></div> -->
+    </div>
+
     <!-- ============ Section 1: 12-Month Trend ============ -->
     <div class="mb-5">
       <div class="flex items-baseline justify-between mb-2">
@@ -209,7 +222,7 @@
 
         <div class="col-span-12 md:col-span-6 lg:col-span-4 card p-3">
           <div class="flex items-baseline justify-between mb-1">
-            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">Bills (Invoices)</h4>
+            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide" title="N Invoices ÷ Active outlets. Part of Core Equation: Sales = Coverage × Strike × Bills/ASO × Drop">Bills per ASO</h4>
             <span class="badge b-slate" id="kpi-bills-mom">—</span>
           </div>
           <div class="flex items-baseline gap-2 mb-1">
@@ -324,7 +337,7 @@
 
         <div class="col-span-12 md:col-span-6 lg:col-span-4 card p-3">
           <div class="flex items-baseline justify-between mb-1">
-            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">Strike Rate</h4>
+            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide" title="Strike Rate (outlet-level) = Active outlets ÷ Coverage. Part of Core Equation. Visit-level Strike (Successful÷Visit) moved to Diagnostics as 'Visit Success Rate'.">Strike Rate</h4>
             <span class="badge b-slate" id="kpi-strike-mom">—</span>
           </div>
           <div class="flex items-baseline gap-2 mb-1">
@@ -510,6 +523,88 @@
           <tbody id="action-table-body" class="divide-y divide-slate-100"></tbody>
         </table>
       </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       TAB: DIAGNOSTICS (F2 — deep-dive widgets)
+       ============================================================ -->
+  <section id="tab-diagnostics" class="tab-panel hidden">
+    <div class="card p-3 mb-3">
+      <h3 class="font-semibold text-slate-900 mb-1">🔬 Diagnostics</h3>
+      <p class="text-xs text-slate-500">
+        เครื่องมือวินิจฉัย Core Equation + benchmarks. Presales only — Credit/Other ยังไม่มี model.
+        <b>Bridge</b> = ที่มาของยอดเปลี่ยน · <b>B3</b> = เทียบ P75 SM · <b>%ASO Gate</b> = แยก F2 เป็น Keep/Back/Review.
+      </p>
+    </div>
+
+    <!-- Level selector: vินิจฉัยลงจากบน DC → Route → Outlet (per F2_Analysis_Layer sec 12.5) -->
+    <div class="card p-3 mb-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs text-slate-500">Roll-up level:</span>
+      <select id="diag-level" class="px-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white">
+        <option value="dc" selected>DC</option>
+        <option value="salesman">Salesman (Route)</option>
+        <option value="outlet">Outlet</option>
+      </select>
+      <span class="text-[10px] text-slate-400 italic">
+        Channel locked to Presales (Credit/Other → N/A). Global filter still applies.
+      </span>
+    </div>
+
+    <!-- N/A banner when global filter is non-Presales -->
+    <div id="diag-na-banner" class="hidden card p-3 mb-3 border-2 border-amber-200 bg-amber-50">
+      <p class="text-sm text-amber-800">
+        ⚠️ <b>N/A — Diagnostics ใช้กับ Presales เท่านั้น</b>
+        Credit/Other ยังไม่มี Core Equation model — Bridge/B3/%ASO Gate ไม่มีความหมาย.
+        เคลียร์ filter channel หรือเลือก Presales เพื่อดู Diagnostics.
+      </p>
+    </div>
+
+    <!-- All widgets wrapped so we can hide together when filter is non-Presales -->
+    <div id="diag-widgets">
+    <!-- Row: Bills total + Visit Success Rate (moved from Overview) -->
+    <div class="grid grid-cols-12 gap-3 mb-3">
+      <div class="col-span-12 md:col-span-6 lg:col-span-6 card p-3">
+        <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide mb-1">Bills (Invoices, total)</h4>
+        <div class="text-xl font-bold text-slate-900" id="diag-bills-total">—</div>
+        <div class="text-[10px] text-slate-500 mt-1">Raw count moved here from Overview. For per-ASO ratio see Overview card.</div>
+      </div>
+      <div class="col-span-12 md:col-span-6 lg:col-span-6 card p-3">
+        <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide mb-1">Visit Success Rate (visit-level)</h4>
+        <div class="text-xl font-bold text-slate-900" id="diag-vsr">—</div>
+        <div class="text-[10px] text-slate-500 mt-1">Successful Visits ÷ Visit Count. Was labeled "Strike Rate" before D1 rename. Outlet-level Strike (ASO/Coverage) is now on Overview.</div>
+      </div>
+    </div>
+
+    <!-- Bridge Analysis -->
+    <div class="card p-3 mb-3">
+      <h4 class="text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Bridge Analysis — MoM <span id="diag-bridge-level-label" class="text-[10px] text-slate-400 font-normal normal-case">(level: dc)</span></h4>
+      <p class="text-[11px] text-slate-500 mb-2">
+        ยอดเดือนนี้ vs เดือนก่อน — แตกที่มาของการเปลี่ยนแปลงตามแต่ละ Core Eq driver.
+      </p>
+      <div id="diag-bridge" class="text-sm">—</div>
+    </div>
+
+    <!-- B3 Comparison -->
+    <div class="card p-3 mb-3">
+      <h4 class="text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">B3 Comparison — vs Top Q (P75) <span id="diag-b3-level-label" class="text-[10px] text-slate-400 font-normal normal-case">(level: dc)</span></h4>
+      <p class="text-[11px] text-slate-500 mb-2">
+        ตำแหน่งปัจจุบันเทียบกับ Top Quartile. ที่ระดับ Salesman: P75 ข้าม Presales salesmen ของ DC. ที่ระดับ Outlet: P75 ของ outlets ใน quadrant.
+      </p>
+      <div id="diag-b3" class="text-sm">—</div>
+    </div>
+
+    <!-- %ASO Gate -->
+    <div class="card p-3 mb-3">
+      <h4 class="text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">%ASO Gate — F2 routing</h4>
+      <p class="text-[11px] text-slate-500 mb-2">
+        แยกร้าน F2 เป็น 3 กลุ่ม:
+        <b>A Keep</b> (active ≥67% ของ window) ·
+        <b>B Back to F1</b> (active ≤33%) ·
+        <b>C Review</b> (มิกซ์).
+      </p>
+      <div id="diag-aso-gate" class="text-sm">—</div>
+    </div>
     </div>
   </section>
 
@@ -787,11 +882,78 @@ const APP = {
 // ============================================================
 // CONFIG (mirror of Python config.yaml)
 // ============================================================
+// ===================================================================
+// F2 G1: Hero SKU classifier (keyword-based per F2_Analysis_Layer sec 10)
+// Returns one of: 'soup_39','soup_p3','soup_65','vita_berry','vita_prune',
+//                 'genu_50','nest_40'  — or null if not a Hero SKU.
+// ===================================================================
+function classifyHeroSKU(name) {
+  if (!name) return null;
+  const s = String(name);
+  const has = (k) => s.indexOf(k) !== -1;
+  // ซุปไก่ family (exclude จูเนียร์ in all)
+  if (has('ซุปไก่') && !has('จูเนียร์')) {
+    if (has('39')) {
+      // P3 = แพค 3 variant of 39
+      return has('แพค 3') ? 'soup_p3' : 'soup_39';
+    }
+    if (has('65') && !has('แพค 3')) return 'soup_65';
+  }
+  // วีต้า (Vita)
+  if (has('วีต้า')) {
+    if (has('เบอร์รี่')) return 'vita_berry';
+    if (has('พรุน')) return 'vita_prune';
+  }
+  // จินเซนโนไซด์ (Genu 50)
+  if (has('จินเซนโนไซด์') && has('50')) return 'genu_50';
+  // รังนก คลาสสิค (40 or 42)
+  if (has('รังนก') && has('คลาสสิค') && (has('40') || has('42'))) return 'nest_40';
+  return null;
+}
+
+// Hero req per shop_type — F2_Analysis_Layer sec 10. 'vita_either' = OR(berry, prune).
+// ResL is the only segment requiring BOTH vita variants explicitly.
+// Keys = actual data values from Sheet 1 'shop type' column (cleaned upstream by compact.md).
+const HERO_REQ_BY_SHOP_TYPE = {
+  // Residential
+  'RESIDENT_S':     ['soup_39', 'soup_65', 'vita_either'],                                              // =3
+  'RESIDENT_M':     ['soup_39', 'soup_65', 'vita_either', 'genu_50', 'nest_40'],                        // =5
+  'RESIDENT_L':     ['soup_39', 'soup_65', 'soup_p3', 'vita_berry', 'vita_prune', 'genu_50', 'nest_40'],// =7
+  // RETAIL → use RESIDENT equivalents (per spec L6)
+  'RETAIL_S':       ['soup_39', 'soup_65', 'vita_either'],
+  'RETAIL_M':       ['soup_39', 'soup_65', 'vita_either', 'genu_50', 'nest_40'],
+  'RETAIL_L':       ['soup_39', 'soup_65', 'soup_p3', 'vita_berry', 'vita_prune', 'genu_50', 'nest_40'],
+  // Specialized
+  'TRANSPORTATION': ['soup_39', 'soup_65', 'vita_either'],
+  'MARKET':         ['soup_39', 'soup_65', 'vita_either'],
+  'FACTORY OFFICE': ['soup_39', 'soup_65', 'vita_either'],
+  'GAS STATION':    ['soup_39', 'soup_65', 'vita_either'],
+  'EDUCATION':      ['soup_39', 'soup_65', 'vita_either', 'genu_50'],
+  'HOSPITAL':       ['soup_39', 'soup_65', 'soup_p3', 'vita_either', 'nest_40'],
+  // Out-of-spec — fallback to nearest Resident size (small volume)
+  'WHOLESALES':     ['soup_39', 'soup_65', 'vita_either'],
+  'LMT_S':          ['soup_39', 'soup_65', 'vita_either'],
+  'LMT_L':          ['soup_39', 'soup_65', 'soup_p3', 'vita_berry', 'vita_prune', 'genu_50', 'nest_40'],
+  'MINIMART':       ['soup_39', 'soup_65', 'vita_either'],
+  'C&C':            ['soup_39', 'soup_65', 'vita_either'],
+};
+
 const CONFIG = {
   channel_map: { 'PreSales': 'Presales', 'CreditSales': 'Credit' },
   time_compliance: { tc2_start: 8, tc2_end: 17, tc3_min_min: 5 },
   active_def: { exclude_status: ['Credit Note'] },
   baseline: { self_trailing: 3, top_q: 0.75 },
+  // F2 G1: Hero compliance — derived at buildOutletMonthly. Top-N classifier
+  // from Presales SKU frequency; req-pct varies by shop_type.
+  hero: {
+    top_n: 20,
+    req_pct: {
+      'Convenience Store': 1.00, 'Supermarket': 1.00, 'Hypermarket': 1.00, 'CVS': 1.00,
+      'Mini Mart': 0.85, 'Provision Shop': 0.70,
+      'Grocery': 0.60, 'Traditional Trade': 0.60,
+      '__default__': 0.70,
+    },
+  },
   scoring: {
     perf_w: { value_per_outlet: 0.40, drop_size: 0.35, sku_per_outlet: 0.25 },
     health_w: { visit_compliance: 0.30, strike_rate: 0.25, time_compliance: 0.20, pfs_score: 0.15, recency: 0.10 },
@@ -803,6 +965,8 @@ const CONFIG = {
     A04_sku_expansion:    { name: 'SKU Range Expansion', gamma: 0.40, confidence: 'Low' },
     A05_reactivate:       { name: 'Reactivate Inactive Shop', confidence: 'Low' },
     A06_strike_rate_recovery: { name: 'Strike Rate Recovery', confidence: 'Medium' },
+    // F2 G2: Credit model not yet designed — placeholder action for non-Presales channels
+    A99_pending_model:    { name: 'Credit model pending', confidence: 'N/A' },
   },
   action_priority: [
     'A02_demote_f2_to_f1', 'A05_reactivate', 'A01_promote_f1_to_f2',
@@ -956,6 +1120,7 @@ function normSellout(rows) {
     delivery_status: r['Delivery Status'],
     delivery_qty_ea: Number(r['Delivery Total  QTY EA'] ?? r['Delivery Total QTY EA']) || 0,
     product_code: r['SO Product Code'],
+    product_name: r['SO Product Name'] || r['Product Name'] || '',  // F2 G1: needed for Hero keyword classifier
     kpi_date: parseThaiDate(r['KPI Date']),
   })).filter(r => r.customer_code && r.kpi_date);
 }
@@ -1031,6 +1196,7 @@ async function buildOutletMonthly(sellout, hh, pfs, progressFn) {
         sales: 0,                    // NET (Invoiced + CN, CN already negative)
         invoice_set: new Set(),      // all distinct invoice numbers
         delivered_skus: new Set(),
+        delivered_hero_cats: new Set(),  // F2 G1: which Hero categories bought this month
         last_sales_date: null,
       });
     }
@@ -1039,6 +1205,9 @@ async function buildOutletMonthly(sellout, hh, pfs, progressFn) {
     if (r.invoice_number != null) rec.invoice_set.add(r.invoice_number);
     if (r.invoice_status === 'Invoiced' && r.delivery_status === 'Confirm' && r.delivery_qty_ea > 0 && r.product_code) {
       rec.delivered_skus.add(r.product_code);
+      // F2 G1: classify Hero category by product_name keywords
+      const cat = classifyHeroSKU(r.product_name || '');
+      if (cat) rec.delivered_hero_cats.add(cat);
     }
     if (!rec.last_sales_date || r.kpi_date > rec.last_sales_date) rec.last_sales_date = r.kpi_date;
   }
@@ -1049,7 +1218,11 @@ async function buildOutletMonthly(sellout, hh, pfs, progressFn) {
     v.drop_size = v.n_invoices > 0 ? v.sales / v.n_invoices : 0;
     v.active = v.sales > 0 ? 1 : 0;
     delete v.invoice_set;
+    // F2 G1: keep both SKU list (display) + Hero category list (compute) downstream
+    v.delivered_sku_list = [...v.delivered_skus];
+    v.delivered_hero_cat_list = [...v.delivered_hero_cats];
     delete v.delivered_skus;
+    delete v.delivered_hero_cats;
     salesArr.push(v);
   }
 
@@ -1181,6 +1354,9 @@ async function buildOutletMonthly(sellout, hh, pfs, progressFn) {
       pfs_score: p.pfs_score ?? null,
       f_pfs: p.f_pfs ?? null,
       visit_salesman_code: v.visit_salesman_code,
+      // F2 G1: SKU + Hero category lists for Hero compute (Presales only — null/empty for non-sales rows)
+      delivered_sku_list: s.delivered_sku_list || [],
+      delivered_hero_cat_list: s.delivered_hero_cat_list || [],
     });
   }
 
@@ -1250,6 +1426,94 @@ async function buildOutletMonthly(sellout, hh, pfs, progressFn) {
   // Sort fact by customer, month
   fact.sort((a, b) => a.customer_code.localeCompare(b.customer_code) ||
                        a.kpi_month.localeCompare(b.kpi_month));
+
+  // =============================================================
+  // F2 G1: Hero compliance + gap_list (Presales only, trailing 3M)
+  // Spec: F2_Analysis_Layer sec 10. Uses keyword classifier on Product Name
+  // (collected at sellout collection step → r.delivered_hero_cat_list)
+  // and req table by shop_type. vita_either = OR(vita_berry, vita_prune).
+  // =============================================================
+  progressFn('Computing Hero compliance...', 76);
+  await sleep(10);
+
+  // Group fact indices by customer for fast trailing-3M lookback
+  const factIdxByCust = new Map();
+  for (let i = 0; i < fact.length; i++) {
+    const c = fact[i].customer_code;
+    if (!factIdxByCust.has(c)) factIdxByCust.set(c, []);
+    factIdxByCust.get(c).push(i);
+  }
+  const moIdx = ms => {
+    const [y, m] = ms.split('-').map(Number);
+    return y * 12 + m;
+  };
+
+  // Stats for diagnostic logging
+  let heroComputed = 0, heroSkipped = 0, totalCatsBought = 0;
+  const unknownShopTypes = new Set();
+
+  for (const r of fact) {
+    // F2 issue 3: Core Eq metrics only valid for Presales — Hero is similarly Presales-only
+    if (r.channel !== 'Presales') {
+      r.hero_compliance = null;
+      r.hero_gap_list = null;
+      heroSkipped++;
+      continue;
+    }
+    // Look up req list by shop_type
+    const reqList = HERO_REQ_BY_SHOP_TYPE[r.shop_type];
+    if (!reqList) {
+      unknownShopTypes.add(r.shop_type || '(empty)');
+      r.hero_compliance = null;
+      r.hero_gap_list = null;
+      heroSkipped++;
+      continue;
+    }
+
+    // Collect Hero categories bought in trailing 3M (this + 2 prior) for this outlet
+    const cutoff = moIdx(r.kpi_month);
+    const minIdx = cutoff - 2;
+    const boughtCats = new Set();
+    for (const fi of (factIdxByCust.get(r.customer_code) || [])) {
+      const fr = fact[fi];
+      const mi = moIdx(fr.kpi_month);
+      if (mi > cutoff) break;     // sorted asc → safe to break
+      if (mi < minIdx) continue;
+      for (const cat of (fr.delivered_hero_cat_list || [])) boughtCats.add(cat);
+    }
+    totalCatsBought += boughtCats.size;
+
+    // Count how many of the req items are satisfied
+    // (handle 'vita_either' which matches either vita_berry OR vita_prune)
+    let satisfied = 0;
+    const gaps = [];
+    for (const req of reqList) {
+      let ok;
+      if (req === 'vita_either') {
+        ok = boughtCats.has('vita_berry') || boughtCats.has('vita_prune');
+      } else {
+        ok = boughtCats.has(req);
+      }
+      if (ok) satisfied++;
+      else gaps.push(req);
+    }
+    r.hero_compliance = reqList.length > 0 ? satisfied / reqList.length : null;
+    r.hero_gap_list = gaps.length === 0 ? '' :
+      (gaps.length <= 5 ? gaps.join(',') : `${gaps.slice(0, 5).join(',')}+${gaps.length - 5}`);
+    heroComputed++;
+  }
+
+  console.log(`[F2 Hero] computed ${heroComputed} Presales rows, skipped ${heroSkipped} (non-Presales or unknown shop_type)`);
+  if (unknownShopTypes.size > 0) {
+    console.warn(`[F2 Hero] Unknown shop_type values (no req table match): ${[...unknownShopTypes].slice(0, 10).join(', ')}`);
+    console.warn(`[F2 Hero] Add these to HERO_REQ_BY_SHOP_TYPE if they should compute Hero.`);
+  }
+
+  // Drop SKU/cat lists after Hero compute — saves memory in IndexedDB cache
+  for (const r of fact) {
+    delete r.delivered_sku_list;
+    delete r.delivered_hero_cat_list;
+  }
   // Carry forward
   let lastFByCust = new Map();
   for (const r of fact) {
@@ -1415,6 +1679,19 @@ async function buildOutletMonthly(sellout, hh, pfs, progressFn) {
     r.expected_uplift_thb = 0;
     r.uplift_confidence = '—';
 
+    // F2 G2: Core Equation (Coverage × Strike × Bills/ASO × Drop) only valid for Presales.
+    // Applying Presales-trained action rules + elasticity to Credit/Other channels
+    // produces inflated uplift (e.g. Credit Mar-26: ฿3M uplift on ฿6.4M sales).
+    // Hold those channels out until a dedicated Credit model is designed.
+    // Placeholder, NOT permanent dropout — flag preserved so future model can flip them on.
+    if (r.channel && r.channel !== 'Presales') {
+      r.primary_action = 'A99_pending_model';
+      r.action_reason = 'Credit model pending';
+      r.expected_uplift_thb = null;       // N/A — distinguishable from 0
+      r.uplift_confidence = 'N/A';
+      continue;
+    }
+
     for (const code of CONFIG.action_priority) {
       let eligible = false;
       if (code === 'A02_demote_f2_to_f1') {
@@ -1462,6 +1739,7 @@ async function buildOutletMonthly(sellout, hh, pfs, progressFn) {
   }
 
   progressFn('Done', 100);
+  normalizeFactRows(fact);
   return fact;
 }
 
@@ -1615,13 +1893,23 @@ async function processStagedFiles() {
       await sleep(10);
       const wb = await readWorkbook(sf.file);
       const rows = sheetToJson(wb);
-      if (sf.type === 'sellout') allSellout.push(...normSellout(rows));
-      else if (sf.type === 'hh') allHH.push(...normHH(rows));
-      else if (sf.type === 'pfs') allPFS.push(...normPFS(rows));
+      // F2 fix: `arr.push(...largeArr)` passes elements as function args — JS engine
+      // caps at ~65k → "Maximum call stack size exceeded" on 145k+ Sellout. Loop instead.
+      let normed;
+      if (sf.type === 'sellout')      normed = normSellout(rows);
+      else if (sf.type === 'hh')      normed = normHH(rows);
+      else if (sf.type === 'pfs')     normed = normPFS(rows);
+      else continue;
+      const target = sf.type === 'sellout' ? allSellout : sf.type === 'hh' ? allHH : allPFS;
+      for (let k = 0; k < normed.length; k++) target.push(normed[k]);
     }
 
-    // Detect DC code from data
-    const dcCodes = uniq([...allSellout, ...allHH, ...allPFS].map(r => r.dc_code).filter(Boolean));
+    // Detect DC code — iterate to avoid spread on 3 large arrays
+    const dcCodeSet = new Set();
+    for (const r of allSellout) if (r.dc_code) dcCodeSet.add(r.dc_code);
+    for (const r of allHH)      if (r.dc_code) dcCodeSet.add(r.dc_code);
+    for (const r of allPFS)     if (r.dc_code) dcCodeSet.add(r.dc_code);
+    const dcCodes = [...dcCodeSet];
     if (dcCodes.length === 0) {
       throw new Error('Could not detect DC code from any file.');
     }
@@ -1685,7 +1973,7 @@ async function processStagedFiles() {
       // Only relevant if user picked Deny (merge newer wins)
       const newMonths = new Set(fact.map(r => r.kpi_month));
       const keepOld = existing.rows.filter(r => !newMonths.has(r.kpi_month));
-      finalRows = [...keepOld, ...fact];
+      finalRows = keepOld.concat(fact);
     }
 
     // Save
@@ -1756,7 +2044,10 @@ async function renderDCList() {
 
   // Load into APP state
   APP.data = {};
-  for (const d of all) APP.data[d.dc_code] = { rows: d.rows, months: d.months, n_outlets: d.n_outlets };
+  for (const d of all) {
+    normalizeFactRows(d.rows);  // F2: backfill new fields for cached data
+    APP.data[d.dc_code] = { rows: d.rows, months: d.months, n_outlets: d.n_outlets };
+  }
 
   document.getElementById('btn-export-excel').disabled = false;
   document.getElementById('btn-export-csv').disabled = false;
@@ -1785,7 +2076,11 @@ async function removeDC(dcCode) {
 // ============================================================
 function getAllRows() {
   const rows = [];
-  for (const dc in APP.data) rows.push(...APP.data[dc].rows);
+  // F2 fix: avoid push(...largeArr) — caps at ~65k args in JS engines
+  for (const dc in APP.data) {
+    const dcRows = APP.data[dc].rows;
+    for (let i = 0; i < dcRows.length; i++) rows.push(dcRows[i]);
+  }
   return rows;
 }
 
@@ -1825,6 +2120,446 @@ function renderDashboard() {
   renderOutletTable();
   renderActions(rows);
   renderTrend();
+  renderDiagnostics(rows);
+}
+
+// ===================================================================
+// F2 Guardrail: Elasticity = %ΔSales ÷ %ΔVisit count (PRE vs POST, Presales only)
+// PRE = avg of 3 earliest months in scope; POST = avg of 3 latest.
+// Threshold (per F2_Integration_Map sec 4):
+//   <1.0 🔴 underperform (visit↑ but sales not following)
+//   1.0–1.5 🟡 watch
+//   ≥1.5 🟢 on target (North Star goal)
+// ===================================================================
+function computeElasticity(rows) {
+  const presales = rows.filter(r => r.channel === 'Presales');
+  if (presales.length === 0) return null;
+
+  const months = uniq(presales.map(r => r.kpi_month).filter(Boolean)).sort();
+  if (months.length < 4) return null;  // need separation between PRE and POST
+
+  // PRE = first 3 months, POST = last 3 months (avg per period)
+  const preM = months.slice(0, 3);
+  const postM = months.slice(-3);
+
+  const preR = presales.filter(r => preM.includes(r.kpi_month));
+  const postR = presales.filter(r => postM.includes(r.kpi_month));
+
+  const preSales = sum(preR.map(r => r.sales)) / preM.length;
+  const postSales = sum(postR.map(r => r.sales)) / postM.length;
+  const preVisit = sum(preR.map(r => r.visit_count)) / preM.length;
+  const postVisit = sum(postR.map(r => r.visit_count)) / postM.length;
+
+  if (preSales === 0 || preVisit === 0) return null;
+
+  const dSales = (postSales - preSales) / preSales;
+  const dVisit = (postVisit - preVisit) / preVisit;
+
+  if (Math.abs(dVisit) < 0.005) return null;  // <0.5% Δvisit → too noisy
+
+  return dSales / dVisit;
+}
+
+function renderGuardrailBadges(rows) {
+  const el = document.getElementById('guardrail-elasticity');
+  if (!el) return;
+
+  const e = computeElasticity(rows);
+  if (e == null) {
+    el.innerHTML = '<span class="px-2 py-0.5 text-[11px] border border-slate-200 rounded text-slate-400">Elasticity: —</span>';
+    return;
+  }
+  const icon = e < 1.0 ? '🔴' : (e < 1.5 ? '🟡' : '🟢');
+  const cls  = e < 1.0 ? 'bg-red-50 border-red-200 text-red-700'
+             : e < 1.5 ? 'bg-amber-50 border-amber-200 text-amber-700'
+             :           'bg-emerald-50 border-emerald-200 text-emerald-700';
+  el.innerHTML = `<span class="px-2 py-0.5 text-[11px] border rounded ${cls}" title="%ΔSales ÷ %ΔVisit count, PRE-3M vs POST-3M, Presales only. Target ≥1.5">${icon} Elasticity: ${e.toFixed(2)}</span>`;
+}
+
+// Forward-declared; real impl below (Diagnostics tab)
+function renderDiagnostics(rows) {
+  if (!rows || rows.length === 0) return;
+  const months = uniq(rows.map(r => r.kpi_month).filter(Boolean)).sort();
+  if (months.length === 0) return;
+  const curMonth = APP.filter.month || months[months.length - 1];
+  const curIdx = months.indexOf(curMonth);
+  const prevMonth = months[curIdx - 1];
+
+  // F2 issue 4: Diagnostics is Presales-only. If global filter narrows to Credit/Other,
+  // show N/A banner and hide all widgets — Core Equation is meaningless there.
+  const banner = document.getElementById('diag-na-banner');
+  const widgets = document.getElementById('diag-widgets');
+  const isFilteredNonPresales = APP.filter.channel && APP.filter.channel !== 'Presales';
+  if (banner && widgets) {
+    if (isFilteredNonPresales) {
+      banner.classList.remove('hidden');
+      widgets.classList.add('hidden');
+      return;
+    } else {
+      banner.classList.add('hidden');
+      widgets.classList.remove('hidden');
+    }
+  }
+
+  // F2 issue 4: lock to Presales rows internally. Global filter still narrows by DC/SM.
+  const presalesRows = rows.filter(r => r.channel === 'Presales');
+  if (presalesRows.length === 0) {
+    // No Presales in scope — show empty state
+    document.getElementById('diag-bills-total').textContent = '—';
+    document.getElementById('diag-vsr').textContent = '—';
+    document.getElementById('diag-bridge').innerHTML = '<p class="text-slate-400 italic">ไม่มี Presales rows ในขอบเขตนี้</p>';
+    document.getElementById('diag-b3').innerHTML = '<p class="text-slate-400 italic">ไม่มี Presales rows ในขอบเขตนี้</p>';
+    document.getElementById('diag-aso-gate').innerHTML = '<p class="text-slate-400 italic">ไม่มี Presales rows ในขอบเขตนี้</p>';
+    return;
+  }
+
+  // F2 issue 4: roll-up level — DC / Salesman / Outlet
+  const level = document.getElementById('diag-level')?.value || 'dc';
+  const levelLabel = {dc: 'DC', salesman: 'Salesman', outlet: 'Outlet'}[level] || 'DC';
+  const blab = document.getElementById('diag-bridge-level-label');
+  const b3lab = document.getElementById('diag-b3-level-label');
+  if (blab) blab.textContent = `(level: ${levelLabel})`;
+  if (b3lab) b3lab.textContent = `(level: ${levelLabel})`;
+
+  const cur = presalesRows.filter(r => r.kpi_month === curMonth);
+  const prev = prevMonth ? presalesRows.filter(r => r.kpi_month === prevMonth) : [];
+  const curAgg = aggKPIs(cur);
+  const prevAgg = prev.length ? aggKPIs(prev) : null;
+
+  // --- Bills total + Visit Success Rate cards (moved from Overview) ---
+  document.getElementById('diag-bills-total').textContent = Fmt.num(curAgg.bills);
+  document.getElementById('diag-vsr').textContent = Fmt.pct(curAgg.visit_success_rate);
+
+  // ============================================================
+  // Bridge Analysis — level-aware
+  // DC: single bridge (Δ for whole DC scope)
+  // Salesman: bridge per salesman (table — current vs prev for each driver)
+  // Outlet: bridge per outlet (top-10 by current sales)
+  // ============================================================
+  const bridgeEl = document.getElementById('diag-bridge');
+  if (bridgeEl) {
+    if (!prevAgg) {
+      bridgeEl.innerHTML = '<p class="text-slate-400 italic">No previous month for bridge.</p>';
+    } else if (level === 'dc') {
+      bridgeEl.innerHTML = renderBridgeRow(curAgg, prevAgg, prevMonth, curMonth);
+    } else {
+      // Per-entity bridge
+      const keyFn = level === 'salesman' ? (r => r.salesman_code || '—')
+                                          : (r => r.customer_code);
+      const labelFn = level === 'salesman' ? (k => k)
+                                            : (k => {
+                                              const sample = cur.find(r => r.customer_code === k);
+                                              return sample ? `${k} · ${sample.shop_name || ''}` : k;
+                                            });
+      const entCur = groupBy(cur, keyFn);
+      const entPrev = groupBy(prev, keyFn);
+      const allKeys = [...new Set([...entCur.keys(), ...entPrev.keys()])];
+      // Sort by current sales desc; for outlet level, cap at top 10
+      const sorted = allKeys
+        .map(k => ({ k, sales: sum((entCur.get(k) || []).map(r => r.sales)) }))
+        .sort((a, b) => b.sales - a.sales);
+      const limit = level === 'outlet' ? 10 : sorted.length;
+      const display = sorted.slice(0, limit);
+
+      let html = `<table class="data-table w-full text-xs">
+        <thead><tr>
+          <th class="text-left px-2 py-1.5">${levelLabel}</th>
+          <th class="num-right px-2 py-1.5">%ΔCoverage</th>
+          <th class="num-right px-2 py-1.5">%ΔStrike</th>
+          <th class="num-right px-2 py-1.5">%ΔBills/ASO</th>
+          <th class="num-right px-2 py-1.5">%ΔDrop</th>
+          <th class="num-right px-2 py-1.5 font-semibold">= %ΔSales</th>
+        </tr></thead><tbody>`;
+      const dr = (a, b) => (b == null || b === 0) ? null : (a - b) / b * 100;
+      const fmtPct = v => v == null ? '—' : `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
+      const cls = v => v == null ? 'text-slate-400'
+                     : v > 0 ? 'text-emerald-600' : 'text-rose-500';
+      for (const { k } of display) {
+        const eCur = aggKPIs(entCur.get(k) || []);
+        const ePrev = aggKPIs(entPrev.get(k) || []);
+        const dCov = dr(eCur.coverage, ePrev.coverage);
+        const dStr = dr(eCur.strike_outlet, ePrev.strike_outlet);
+        const dBpa = dr(eCur.bills_per_aso, ePrev.bills_per_aso);
+        const dDrp = dr(eCur.drop, ePrev.drop);
+        const dSal = dr(eCur.sales, ePrev.sales);
+        html += `<tr>
+          <td class="px-2 py-1.5">${labelFn(k)}</td>
+          <td class="num-right px-2 py-1.5 ${cls(dCov)}">${fmtPct(dCov)}</td>
+          <td class="num-right px-2 py-1.5 ${cls(dStr)}">${fmtPct(dStr)}</td>
+          <td class="num-right px-2 py-1.5 ${cls(dBpa)}">${fmtPct(dBpa)}</td>
+          <td class="num-right px-2 py-1.5 ${cls(dDrp)}">${fmtPct(dDrp)}</td>
+          <td class="num-right px-2 py-1.5 font-semibold ${cls(dSal)}">${fmtPct(dSal)}</td>
+        </tr>`;
+      }
+      html += '</tbody></table>';
+      if (level === 'outlet' && sorted.length > limit) {
+        html += `<p class="text-[10px] text-slate-400 mt-2">Showing top ${limit} outlets by sales. Total in scope: ${sorted.length}.</p>`;
+      }
+      html += `<p class="text-[10px] text-slate-400 mt-2">${prevMonth} → ${curMonth}</p>`;
+      bridgeEl.innerHTML = html;
+    }
+  }
+
+  // ============================================================
+  // B3 Comparison — level-aware
+  // DC: P75 across DCs (only useful if multiple DCs)
+  // Salesman: P75 across Presales salesmen
+  // Outlet: P75 across outlets within current quadrant mix
+  // ============================================================
+  const b3El = document.getElementById('diag-b3');
+  if (b3El) {
+    let entities, entityKeyFn, minCount;
+    if (level === 'dc') {
+      entityKeyFn = r => r.dc_code;
+      minCount = 2;
+    } else if (level === 'salesman') {
+      entityKeyFn = r => r.salesman_code;
+      minCount = 4;
+    } else { // outlet
+      entityKeyFn = r => r.customer_code;
+      minCount = 10;
+    }
+    const entKeys = uniq(cur.map(entityKeyFn).filter(Boolean));
+    if (entKeys.length < minCount) {
+      b3El.innerHTML = `<p class="text-slate-400 italic">ไม่พอ ${levelLabel} ในขอบเขตเพื่อคำนวณ B3 (ต้อง ≥${minCount})</p>`;
+    } else {
+      const entAggs = entKeys.map(k => aggKPIs(cur.filter(r => entityKeyFn(r) === k)));
+      const b3 = {
+        coverage:      quantile(entAggs.map(a => a.coverage).filter(x => x != null), 0.75),
+        strike_outlet: quantile(entAggs.map(a => a.strike_outlet).filter(x => x != null), 0.75),
+        bills_per_aso: quantile(entAggs.map(a => a.bills_per_aso).filter(x => x != null), 0.75),
+        drop:          quantile(entAggs.map(a => a.drop).filter(x => x != null), 0.75),
+      };
+      const rowFor = (name, cur_v, b3_v, fmt) => {
+        const gap = (b3_v && cur_v != null) ? (b3_v - cur_v) / b3_v * 100 : null;
+        const gapTxt = gap == null ? '—' : `${gap > 0 ? '+' : ''}${gap.toFixed(1)}%`;
+        const gapCls = gap == null ? 'text-slate-400'
+                     : gap > 10 ? 'text-rose-600 font-semibold'
+                     : gap > 0 ? 'text-amber-600'
+                     : 'text-emerald-600 font-semibold';
+        return `<tr>
+          <td class="px-3 py-1.5">${name}</td>
+          <td class="num-right px-3 py-1.5">${fmt(cur_v)}</td>
+          <td class="num-right px-3 py-1.5 text-slate-500">${fmt(b3_v)}</td>
+          <td class="num-right px-3 py-1.5 ${gapCls}">${gapTxt}</td>
+        </tr>`;
+      };
+      b3El.innerHTML = `
+        <table class="data-table w-full">
+          <thead><tr>
+            <th class="text-left px-3 py-2">Metric</th>
+            <th class="num-right px-3 py-2">Current (scope avg)</th>
+            <th class="num-right px-3 py-2">B3 (P75 ${levelLabel})</th>
+            <th class="num-right px-3 py-2">Gap %</th>
+          </tr></thead>
+          <tbody>
+            ${rowFor('Coverage',         curAgg.coverage,      b3.coverage,      Fmt.num)}
+            ${rowFor('Strike (outlet)',  curAgg.strike_outlet, b3.strike_outlet, Fmt.pct)}
+            ${rowFor('Bills/ASO',        curAgg.bills_per_aso, b3.bills_per_aso, Fmt.num1)}
+            ${rowFor('Drop Size',        curAgg.drop,          b3.drop,          Fmt.money)}
+          </tbody>
+        </table>
+        <p class="text-[10px] text-slate-400 mt-2">B3 computed across ${entKeys.length} ${levelLabel.toLowerCase()}s (Presales only).</p>
+      `;
+    }
+  }
+
+  // ============================================================
+  // %ASO Gate (unchanged — already outlet-level by design)
+  // ============================================================
+  const gateEl = document.getElementById('diag-aso-gate');
+  if (gateEl) {
+    const recent3 = months.slice(Math.max(0, curIdx - 2), curIdx + 1);
+    const f2Rows = presalesRows.filter(r => recent3.includes(r.kpi_month) && r.f_planned === 'F2');
+    if (f2Rows.length === 0) {
+      gateEl.innerHTML = '<p class="text-slate-400 italic">ไม่มีร้าน F2 ในขอบเขตปัจจุบัน</p>';
+    } else {
+      const byOutlet = new Map();
+      for (const r of f2Rows) {
+        if (!byOutlet.has(r.customer_code)) byOutlet.set(r.customer_code, []);
+        byOutlet.get(r.customer_code).push(r.active === 1);
+      }
+      let keep = 0, back = 0, review = 0;
+      for (const [, activeArr] of byOutlet) {
+        const aRate = activeArr.filter(Boolean).length / activeArr.length;
+        if (aRate >= 0.67) keep++;
+        else if (aRate <= 0.33) back++;
+        else review++;
+      }
+      const total = byOutlet.size;
+      const cell = (label, n, color, desc) => `
+        <div class="${color} px-3 py-3 rounded text-center">
+          <div class="text-[10px] uppercase tracking-wider">${label}</div>
+          <div class="text-2xl font-semibold mt-1">${n}</div>
+          <div class="text-[10px] mt-0.5 opacity-75">${(n/total*100).toFixed(0)}% · ${desc}</div>
+        </div>`;
+      gateEl.innerHTML = `
+        <div class="grid grid-cols-3 gap-3">
+          ${cell('A · Keep',        keep,   'bg-emerald-50 text-emerald-800', 'active ≥67% of window')}
+          ${cell('B · Back to F1',  back,   'bg-rose-50 text-rose-700',       'active ≤33% of window')}
+          ${cell('C · Review',      review, 'bg-amber-50 text-amber-700',     'mixed — wait one month')}
+        </div>
+        <p class="text-[10px] text-slate-400 mt-2">Window: ${recent3.join(', ')} · Total F2 outlets in scope: ${total}</p>
+      `;
+    }
+  }
+}
+
+// Helper: render a single Bridge row (5 boxes side-by-side)
+function renderBridgeRow(curAgg, prevAgg, prevMonth, curMonth) {
+  const dr = (a, b) => (b == null || b === 0) ? null : (a - b) / b * 100;
+  const fmtPct = v => v == null ? '—' : `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
+  const colorBox = v => v == null ? 'bg-slate-100 text-slate-400'
+                   : v > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600';
+  const drivers = [
+    ['Coverage',     dr(curAgg.coverage,        prevAgg.coverage)],
+    ['Strike (outlet)', dr(curAgg.strike_outlet, prevAgg.strike_outlet)],
+    ['Bills/ASO',    dr(curAgg.bills_per_aso,   prevAgg.bills_per_aso)],
+    ['Drop Size',    dr(curAgg.drop,            prevAgg.drop)],
+    ['= Sales',      dr(curAgg.sales,           prevAgg.sales)],
+  ];
+  return `
+    <div class="grid grid-cols-5 gap-2">
+      ${drivers.map(([name, v]) => `
+        <div class="${colorBox(v)} px-3 py-2 rounded text-center">
+          <div class="text-[10px] uppercase tracking-wider">${name}</div>
+          <div class="text-base font-semibold mt-0.5">${fmtPct(v)}</div>
+        </div>
+      `).join('')}
+    </div>
+    <p class="text-[10px] text-slate-400 mt-2">${prevMonth} → ${curMonth}. Identity: %ΔSales ≈ %ΔCov + %ΔStrike + %ΔBills/ASO + %ΔDrop (log-decomp approx).</p>
+  `;
+}
+
+// ===================================================================
+// F2 normalization: add derived fields per row (non-breaking — additive)
+// Called once at load time from buildOutletMonthly / loadDemoData /
+// cached IndexedDB rehydration. Idempotent — safe to call repeatedly.
+//
+// Adds (no field rename):
+//   - strike_rate_outlet  = active (0/1); aggregates to ASO/Coverage
+//   - bills_per_aso       = n_invoices / active (per active outlet)
+//   - hero_compliance     = (computed in buildOutletMonthly when raw Sellout
+//                           SKU is available; otherwise null for demo / cached
+//                           rows where SKU detail was already dropped)
+//   - hero_gap_list       = (same — filled at buildOutletMonthly stage)
+//   - tenure_months       = months since outlet's first appearance
+//   - severity            = '🔴'|'🟡'|'🟢'|'—'  dual benchmark
+//   - reasoning_text      = sentence citing weak Core-Equation vars
+//
+// NOTE: r.strike_rate (visit-level) is INTENTIONALLY left untouched
+// so all existing scoring/action/chart code keeps working. Map's D1
+// label rename happens at the UI surface in Phase B.
+// ===================================================================
+function normalizeFactRows(rows) {
+  if (!Array.isArray(rows) || rows.length === 0) return rows;
+
+  // --- 1. Simple per-row derived fields ---
+  // F2 Issue 3: Core Equation metrics (strike_rate_outlet, bills_per_aso) only valid
+  // for Presales. Coverage requires on-plan visit which Credit/Other don't have →
+  // setting these for non-Presales would produce inflated/meaningless ratios.
+  // sales/active/drop_size/n_invoices remain — those are channel-agnostic.
+  for (const r of rows) {
+    const isPresales = r.channel === 'Presales';
+    if (r.strike_rate_outlet === undefined) {
+      r.strike_rate_outlet = isPresales ? (r.active ? 1 : 0) : null;
+    } else if (!isPresales) {
+      r.strike_rate_outlet = null;  // force-null even if upstream set it (from cached old data)
+    }
+    if (r.bills_per_aso === undefined) {
+      r.bills_per_aso = isPresales ? ((r.active > 0) ? (r.n_invoices || 0) / r.active : 0) : null;
+    } else if (!isPresales) {
+      r.bills_per_aso = null;
+    }
+    if (r.hero_compliance === undefined) r.hero_compliance = null;
+    if (r.hero_gap_list === undefined) r.hero_gap_list = null;
+  }
+
+  // --- 2. tenure_months: months since outlet's first appearance ---
+  const firstMonth = new Map();
+  for (const r of rows) {
+    const cur = firstMonth.get(r.customer_code);
+    if (cur === undefined || r.kpi_month < cur) firstMonth.set(r.customer_code, r.kpi_month);
+  }
+  const monthDiff = (a, b) => {
+    // a,b like '2025-06'
+    const [ay, am] = a.split('-').map(Number);
+    const [by, bm] = b.split('-').map(Number);
+    return (ay - by) * 12 + (am - bm);
+  };
+  for (const r of rows) {
+    if (r.tenure_months === undefined) {
+      const fm = firstMonth.get(r.customer_code);
+      r.tenure_months = fm ? monthDiff(r.kpi_month, fm) : 0;
+    }
+  }
+
+  // --- 3. Severity + reasoning (peer p25 within month×quadrant, self-3M×0.7) ---
+  // Only meaningful for active rows. Inactive → '—'.
+  const activeRows = rows.filter(r => r.active === 1);
+
+  // Peer p25 per (month, quadrant) for Drop and Bills/ASO
+  const peerKey = r => `${r.kpi_month}|${r.quadrant || ''}`;
+  const peerBuckets = new Map();
+  for (const r of activeRows) {
+    const k = peerKey(r);
+    if (!peerBuckets.has(k)) peerBuckets.set(k, { drop: [], bpa: [] });
+    peerBuckets.get(k).drop.push(r.drop_size || 0);
+    peerBuckets.get(k).bpa.push(r.bills_per_aso || 0);
+  }
+  const peerP25 = new Map();
+  for (const [k, v] of peerBuckets) {
+    peerP25.set(k, { drop: quantile(v.drop, 0.25), bpa: quantile(v.bpa, 0.25) });
+  }
+
+  // Self trailing-3M median per outlet (excluding current month)
+  // Group by customer, sort by month, rolling 3-prev median
+  const byCust = new Map();
+  for (const r of activeRows) {
+    if (!byCust.has(r.customer_code)) byCust.set(r.customer_code, []);
+    byCust.get(r.customer_code).push(r);
+  }
+  const selfMed = new Map(); // key: cust|month → {drop, bpa}
+  for (const [cust, list] of byCust) {
+    list.sort((a, b) => a.kpi_month < b.kpi_month ? -1 : 1);
+    for (let i = 0; i < list.length; i++) {
+      const prevDrops = [], prevBpas = [];
+      for (let j = Math.max(0, i - 3); j < i; j++) {
+        prevDrops.push(list[j].drop_size || 0);
+        prevBpas.push(list[j].bills_per_aso || 0);
+      }
+      selfMed.set(`${cust}|${list[i].kpi_month}`, {
+        drop: median(prevDrops), bpa: median(prevBpas),
+      });
+    }
+  }
+
+  const color = (peer, slf) => (peer && slf) ? '🔴' : (peer || slf) ? '🟡' : '🟢';
+  for (const r of rows) {
+    if (r.severity !== undefined && r.reasoning_text !== undefined) continue;
+    if (r.active !== 1) {
+      r.severity = '—';
+      r.reasoning_text = 'ไม่ active เดือนนี้';
+      continue;
+    }
+    const p = peerP25.get(peerKey(r)) || { drop: 0, bpa: 0 };
+    const s = selfMed.get(`${r.customer_code}|${r.kpi_month}`) || { drop: 0, bpa: 0 };
+    const dPeerBad = p.drop > 0 && r.drop_size < p.drop;
+    const dSelfBad = s.drop > 0 && r.drop_size < s.drop * 0.7;
+    const bPeerBad = p.bpa > 0 && r.bills_per_aso < p.bpa;
+    const bSelfBad = s.bpa > 0 && r.bills_per_aso < s.bpa * 0.7;
+    const sevDrop = color(dPeerBad, dSelfBad);
+    const sevBpa  = color(bPeerBad, bSelfBad);
+    const rank = { '🟢': 0, '🟡': 1, '🔴': 2 };
+    r.severity = rank[sevDrop] >= rank[sevBpa] ? sevDrop : sevBpa;
+    const parts = [];
+    if (sevDrop === '🔴') parts.push('Drop ต่ำ (เทียบเพื่อน+ตัวเอง)');
+    else if (sevDrop === '🟡') parts.push('Drop อ่อน');
+    if (sevBpa === '🔴') parts.push('Bills/ASO ต่ำ (เทียบเพื่อน+ตัวเอง)');
+    else if (sevBpa === '🟡') parts.push('Bills/ASO อ่อน');
+    r.reasoning_text = parts.length ? parts.join('; ') : 'อยู่ในเกณฑ์';
+  }
+  return rows;
 }
 
 // Compute aggregate KPIs for a row subset
@@ -1842,16 +2577,32 @@ function aggKPIs(subset) {
   const n_outlets = uniq(subset.map(r => r.customer_code)).length;
   const uplift = sum(subset.filter(r => r.primary_action !== 'A00_no_action').map(r => r.expected_uplift_thb));
   const upliftCount = subset.filter(r => r.primary_action !== 'A00_no_action').length;
+
+  // F2: Core Equation (Coverage/Strike/Bills-per-ASO) only valid for Presales.
+  // Credit/Other channels have no On-Plan visit pattern → Coverage→0 → ratio explodes.
+  // If subset has NO Presales rows AND has any non-Presales row → null those metrics.
+  // Mixed subsets (DC level) keep computed value: Presales dominates the denominator.
+  const hasPresales = subset.some(r => r.channel === 'Presales');
+  const hasNonPresales = subset.some(r => r.channel && r.channel !== 'Presales');
+  const coreEqValid = hasPresales || !hasNonPresales;
+  const aso_val = coreEqValid ? (coverage > 0 ? active / coverage : 0) : null;
+  const bpa_val = coreEqValid ? (active > 0 ? bills / active : 0) : null;
+
   return {
     sales, active, bills, visit, succ, planned, extra, onplan, coverage, n_outlets,
     drop: bills > 0 ? sales / bills : 0,
     strike: visit > 0 ? succ / visit : 0,
     extra_pct: planned > 0 ? extra / planned : 0,
-    aso: coverage > 0 ? active / coverage : 0,
+    aso: aso_val,
     compliance: mean(subset.map(r => r.visit_compliance)) || 0,
     pfs: mean(subset.map(r => r.pfs_score).filter(x => x != null)) || 0,
     sku_per_outlet: n_outlets > 0 ? skus / n_outlets : 0,
     uplift, upliftCount,
+    // F2 additions (non-breaking)
+    bills_per_aso: bpa_val,
+    strike_outlet:  aso_val,                                  // alias of aso, canonical name
+    visit_success_rate: visit > 0 ? succ / visit : 0,         // alias of strike, canonical name (visit-level → safe for all channels)
+    core_eq_valid: coreEqValid,                                // flag for UI: render '—' if false
   };
 }
 
@@ -1882,6 +2633,9 @@ function renderOverviewV2(rows) {
     pfs: mean(prev3Aggs.map(a => a.pfs)),
     sku_per_outlet: mean(prev3Aggs.map(a => a.sku_per_outlet)),
     compliance: mean(prev3Aggs.map(a => a.compliance)),
+    // F2 additions for swapped cards
+    bills_per_aso: mean(prev3Aggs.map(a => a.bills_per_aso).filter(x => x != null)),
+    strike_outlet: mean(prev3Aggs.map(a => a.strike_outlet).filter(x => x != null)),
   };
 
   // Top Q salesman within current scope
@@ -1899,7 +2653,13 @@ function renderOverviewV2(rows) {
     sku_per_outlet: quantile(slmAggs.map(a => a.sku_per_outlet), 0.75) || 0,
     pfs: quantile(slmAggs.map(a => a.pfs), 0.75) || 0,
     compliance: quantile(slmAggs.map(a => a.compliance), 0.75) || 0,
+    // F2 additions for new cards (Bills per ASO, Strike outlet)
+    bills_per_aso: quantile(slmAggs.map(a => a.bills_per_aso).filter(x => x != null), 0.75) || 0,
+    strike_outlet: quantile(slmAggs.map(a => a.strike_outlet).filter(x => x != null), 0.75) || 0,
   };
+
+  // F2 Guardrail: Elasticity = %ΔSales ÷ %ΔVisit (PRE 3M vs POST 3M, Presales only)
+  renderGuardrailBadges(rows);
 
   // Filter context
   const ctx = [];
@@ -1916,10 +2676,12 @@ function renderOverviewV2(rows) {
   setVsLabel('kpi-sales-vs3m', deltaPct(curAgg.sales, prev3Avg?.sales));
   document.getElementById('kpi-sales-topq').textContent = topQ.sales ? Fmt.money(topQ.sales) : '—';
 
-  document.getElementById('kpi-bills').textContent = Fmt.num(curAgg.bills);
-  setBadge('kpi-bills-mom', deltaPct(curAgg.bills, prevAgg?.bills), 'MoM');
-  setVsLabel('kpi-bills-vs3m', deltaPct(curAgg.bills, prev3Avg?.bills));
-  document.getElementById('kpi-bills-topq').textContent = topQ.bills ? Fmt.num(topQ.bills) : '—';
+  // F2: Bills card now shows Bills per ASO (Core Eq driver) — Bills total moved to Diagnostics
+  const bpa = curAgg.bills_per_aso;
+  document.getElementById('kpi-bills').textContent = bpa != null ? Fmt.num1(bpa) : '—';
+  setBadge('kpi-bills-mom', deltaPct(bpa, prevAgg?.bills_per_aso), 'MoM');
+  setVsLabel('kpi-bills-vs3m', deltaPct(bpa, prev3Avg?.bills_per_aso));
+  document.getElementById('kpi-bills-topq').textContent = topQ.bills_per_aso ? Fmt.num1(topQ.bills_per_aso) : '—';
 
   document.getElementById('kpi-drop').textContent = Fmt.money(curAgg.drop);
   setBadge('kpi-drop-mom', deltaPct(curAgg.drop, prevAgg?.drop), 'MoM');
@@ -1951,10 +2713,12 @@ function renderOverviewV2(rows) {
   setVsLabel('kpi-extra-vs3m', deltaPP(curAgg.extra_pct, prev3Avg?.extra_pct), '', 'pp');
   document.getElementById('kpi-extra-topq').textContent = topQ.extra_pct ? Fmt.pct(topQ.extra_pct) : '—';
 
-  document.getElementById('kpi-strike').textContent = Fmt.pct(curAgg.strike);
-  setBadge('kpi-strike-mom', deltaPP(curAgg.strike, prevAgg?.strike), 'pp');
-  setVsLabel('kpi-strike-vs3m', deltaPP(curAgg.strike, prev3Avg?.strike), '', 'pp');
-  document.getElementById('kpi-strike-topq').textContent = topQ.strike ? Fmt.pct(topQ.strike) : '—';
+  // F2: Strike Rate now outlet-level (= ASO/Coverage). Visit-level Strike moved to Diagnostics
+  const so = curAgg.strike_outlet;
+  document.getElementById('kpi-strike').textContent = so != null ? Fmt.pct(so) : '—';
+  setBadge('kpi-strike-mom', deltaPP(so, prevAgg?.strike_outlet), 'pp');
+  setVsLabel('kpi-strike-vs3m', deltaPP(so, prev3Avg?.strike_outlet), '', 'pp');
+  document.getElementById('kpi-strike-topq').textContent = topQ.strike_outlet ? Fmt.pct(topQ.strike_outlet) : '—';
 
   document.getElementById('kpi-pfs').textContent = Fmt.num1(curAgg.pfs);
   setBadge('kpi-pfs-mom', deltaPct(curAgg.pfs, prevAgg?.pfs), 'MoM');
@@ -1969,7 +2733,7 @@ function renderOverviewV2(rows) {
   // ============ Trend line charts (12 months) ============
   const series = computeMonthlySeries(rows, months);
   drawTrendChart('trend-sales',      months, series.sales,      '#3B82F6', 'money');
-  drawTrendChart('trend-bills',      months, series.bills,      '#1D4ED8', 'num');
+  drawTrendChart('trend-bills',      months, series.bills,      '#1D4ED8', 'num1');
   drawTrendChart('trend-drop',       months, series.drop,       '#F59E0B', 'money');
   drawTrendChart('trend-active',     months, series.active,     '#A78BFA', 'num');
   drawTrendChart('trend-coverage',   months, series.coverage,   '#06B6D4', 'num');
@@ -2015,9 +2779,10 @@ function renderOverviewV2(rows) {
     </div>
   `).join('') || '<p class="text-slate-400 italic">No data</p>';
 
-  // Top Uplift Outlets
-  const topUplift = [...cur].filter(r => r.primary_action !== 'A00_no_action')
-    .sort((a, b) => b.expected_uplift_thb - a.expected_uplift_thb).slice(0, 10);
+  // Top Uplift Outlets — exclude no_action + A99 pending (Credit model TBD)
+  const topUplift = [...cur].filter(r => r.primary_action !== 'A00_no_action' &&
+                                          r.primary_action !== 'A99_pending_model')
+    .sort((a, b) => (b.expected_uplift_thb ?? 0) - (a.expected_uplift_thb ?? 0)).slice(0, 10);
   document.getElementById('list-uplift').innerHTML = topUplift.map(r => `
     <div class="flex items-center justify-between py-0.5">
       <div class="flex-1 min-w-0 mr-2">
@@ -2047,14 +2812,16 @@ function computeMonthlySeries(rows, months) {
     const n_outlets = uniq(sub.map(r => r.customer_code)).length;
     const uplift = sum(sub.filter(r => r.primary_action !== 'A00_no_action').map(r => r.expected_uplift_thb));
     series.sales.push(sales);
-    series.bills.push(bills);
+    // F2: chart binds to bills_per_aso (Bills total moved to Diagnostics)
+    series.bills.push(active > 0 ? bills / active : 0);
     series.drop.push(bills > 0 ? sales / bills : 0);
     series.active.push(active);
     series.coverage.push(onplan_outlets);
     series.sku.push(n_outlets > 0 ? sum(sub.map(r => r.sku_per_outlet || 0)) / n_outlets : 0);
     series.visits.push(visit);
     series.extra_pct.push(planned > 0 ? extra / planned : 0);
-    series.strike.push(visit > 0 ? succ / visit : 0);
+    // F2: chart now plots outlet-level Strike (= ASO/Coverage); visit-level moved to Diagnostics
+    series.strike.push(onplan_outlets > 0 ? active / onplan_outlets : 0);
     series.pfs.push(mean(sub.map(r => r.pfs_score).filter(x => x != null)) || 0);
     series.compliance.push(mean(sub.map(r => r.visit_compliance)) || 0);
     series.uplift.push(uplift);
@@ -2420,7 +3187,9 @@ function renderOutletTable() {
     ['Active', 'active'],
     ['Drop', 'drop_size', 'money', 'right'],
     ['SKU', 'sku_per_outlet', 'num', 'right'],
-    ['Strike', 'strike_rate', 'pct', 'right'],
+    ['Visit Success', 'strike_rate', 'pct', 'right'],   // F2: visit-level (renamed from "Strike")
+    ['Hero %', 'hero_compliance', 'pct', 'right'],       // F2: placeholder, NaN until raw Sellout
+    ['Hero Gap', 'hero_gap_list', 'text', 'left'],       // F2: list of missing Hero SKUs
     ['PFS', 'pfs_score', 'num1', 'right'],
     ['F', 'f_planned'],
     ['Days', 'day_since_last_sales', 'num', 'right'],
@@ -2468,20 +3237,23 @@ function renderActions(rows) {
     confidence: rs[0]?.uplift_confidence || '—',
   })).sort((a, b) => Math.abs(b.uplift) - Math.abs(a.uplift));
 
-  document.getElementById('action-summary').innerHTML = summary.map(s => `
+  document.getElementById('action-summary').innerHTML = summary.map(s => {
+    const isPending = s.code === 'A99_pending_model';
+    return `
     <div class="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
       <div>
-        <div class="font-medium text-slate-900">${s.name}</div>
+        <div class="font-medium ${isPending ? 'text-slate-500 italic' : 'text-slate-900'}">${s.name}</div>
         <div class="text-xs text-slate-500">${s.count} outlets · ${s.confidence} confidence</div>
       </div>
-      <div class="text-right ${s.uplift >= 0 ? 'text-emerald-600' : 'text-rose-500'} font-semibold">
-        ${Fmt.money(s.uplift)}
+      <div class="text-right font-semibold ${isPending ? 'text-slate-400' : (s.uplift >= 0 ? 'text-emerald-600' : 'text-rose-500')}">
+        ${isPending ? 'N/A' : Fmt.money(s.uplift)}
       </div>
-    </div>
-  `).join('') || '<p class="text-slate-500 italic">No actions in current scope</p>';
+    </div>`;
+  }).join('') || '<p class="text-slate-500 italic">No actions in current scope</p>';
 
-  // Top uplift outlets
-  const top = [...cur].sort((a, b) => b.expected_uplift_thb - a.expected_uplift_thb).slice(0, 10);
+  // Top uplift outlets — skip A99 pending so list is meaningful
+  const top = [...cur].filter(r => r.primary_action !== 'A99_pending_model')
+    .sort((a, b) => (b.expected_uplift_thb ?? 0) - (a.expected_uplift_thb ?? 0)).slice(0, 10);
   document.getElementById('top-uplift-list').innerHTML = top.map(r => `
     <div class="flex items-center justify-between py-1.5 px-2 hover:bg-slate-50 rounded">
       <div>
@@ -2492,13 +3264,22 @@ function renderActions(rows) {
     </div>
   `).join('') || '<p class="text-slate-500 italic">No outlets</p>';
 
-  // Action table - top 50
-  const tableRows = [...cur].sort((a, b) => Math.abs(b.expected_uplift_thb) - Math.abs(a.expected_uplift_thb)).slice(0, 50);
+  // Action table — top 50 (Math.abs(null)=0 → A99 rows sink to bottom; still listed so users see them)
+  const tableRows = [...cur].sort((a, b) =>
+    Math.abs(b.expected_uplift_thb ?? 0) - Math.abs(a.expected_uplift_thb ?? 0)).slice(0, 50);
   document.getElementById('action-table-body').innerHTML = tableRows.map(r => `
     <tr>
       <td class="px-3 py-2"><div class="font-medium">${r.shop_name}</div><div class="text-xs text-slate-500">${r.customer_code}</div></td>
       <td class="px-3 py-2">${r.salesman_code || '—'}</td>
-      <td class="px-3 py-2">${r.action_reason}</td>
+      <td class="px-3 py-2">
+        <div class="flex items-start gap-1.5">
+          <span title="severity: ${r.severity || '—'}">${r.severity || '—'}</span>
+          <div>
+            <div>${r.action_reason}</div>
+            <div class="text-[11px] text-slate-500 italic">${r.reasoning_text || ''}</div>
+          </div>
+        </div>
+      </td>
       <td class="num-right px-3 py-2 ${r.expected_uplift_thb >= 0 ? 'text-emerald-600' : 'text-rose-500'} font-medium">${Fmt.money(r.expected_uplift_thb)}</td>
       <td class="px-3 py-2"><span class="badge ${r.uplift_confidence === 'High' ? 'b-green' : r.uplift_confidence === 'Medium' ? 'b-amber' : 'b-slate'}">${r.uplift_confidence}</span></td>
       <td class="num-right px-3 py-2">${Fmt.num1(r.performance_score)}</td>
@@ -2547,7 +3328,11 @@ function renderTrend() {
     row.active = active;
     row.n_outlets = uniq(rs.map(r => r.customer_code)).length;
     row.coverage = coverage;
-    row.aso_pct = coverage > 0 ? active / coverage : null;
+    // F2: Core Eq (%ASO) only valid for Presales — null for non-Presales groups
+    const hasPresales = rs.some(r => r.channel === 'Presales');
+    const hasNonPresales = rs.some(r => r.channel && r.channel !== 'Presales');
+    const coreEqValid = hasPresales || !hasNonPresales;
+    row.aso_pct = coreEqValid && coverage > 0 ? active / coverage : null;
     row.drop_size = bills > 0 ? sales / bills : null;
     row.strike_rate = visit > 0 ? succ / visit : null;
     row.extra_pct = planned > 0 ? extra / planned : null;
@@ -2584,11 +3369,15 @@ function renderTrend() {
     const extra = sum(ms.map(r => r.visit_extra_count));
     const coverage = uniq(ms.filter(r => r.visit_onplan_count > 0).map(r => r.customer_code)).length;
     const uplift = sum(ms.filter(r => r.primary_action !== 'A00_no_action').map(r => r.expected_uplift_thb));
+    // F2: Core Eq rule (Presales only)
+    const moHasPresales = ms.some(r => r.channel === 'Presales');
+    const moHasNonPresales = ms.some(r => r.channel && r.channel !== 'Presales');
+    const moCoreEqValid = moHasPresales || !moHasNonPresales;
     return {
       total: 'TOTAL', kpi_month: mo, sales, active,
       n_outlets: uniq(ms.map(r => r.customer_code)).length,
       coverage,
-      aso_pct: coverage > 0 ? active / coverage : null,
+      aso_pct: moCoreEqValid && coverage > 0 ? active / coverage : null,
       drop_size: bills > 0 ? sales / bills : null,
       strike_rate: visit > 0 ? succ / visit : null,
       extra_pct: planned > 0 ? extra / planned : null,
@@ -2709,20 +3498,47 @@ async function exportExcel() {
 
   const wb = XLSX.utils.book_new();
 
-  // Sheet 1: Outlet Database
+  // Sheet 1: Outlet Database (F2 schema mirror — D1 rename, new cols, drop yoy, fill ytd)
   const s1cols = ['kpi_month', 'dc_code', 'channel', 'salesman_code', 'rsm', 'asm',
                   'customer_code', 'shop_name', 'shop_segment', 'shop_type',
                   'sales', 'active', 'n_invoices', 'drop_size', 'sku_per_outlet',
                   'visit_count', 'visit_planned_count', 'visit_onplan_count',
                   'visit_extra_count', 'visit_successful_count',
-                  'strike_rate', 'extra_pct', 'tc1_pct', 'tc2_pct', 'tc3_pct', 'tc_avg',
+                  // F2 D1 rename: strike_rate(visit) → visit_success_rate
+                  'visit_success_rate', 'extra_pct', 'tc1_pct', 'tc2_pct', 'tc3_pct', 'tc_avg',
                   'pfs_score', 'f_planned', 'f_source', 'visit_compliance',
                   'day_since_last_sales', 'lifecycle_band',
-                  'sales_mom_pct', 'sales_yoy_pct', 'sales_ytd',
+                  // F2: drop sales_yoy_pct (uncomputable with 12mo window); keep ytd computed
+                  'sales_mom_pct', 'sales_ytd',
                   'performance_score', 'health_score', 'quadrant',
-                  'primary_action', 'action_reason', 'expected_uplift_thb', 'uplift_confidence'];
+                  'primary_action', 'action_reason', 'expected_uplift_thb', 'uplift_confidence',
+                  // F2 STEP 1 additions
+                  'strike_rate_outlet', 'bills_per_aso', 'hero_compliance', 'hero_gap_list',
+                  'tenure_months', 'severity', 'reasoning_text'];
+
+  // Compute sales_ytd live for export (was missing in legacy rows)
+  // Cumulative sales per outlet within calendar year (resets each January)
+  const ytdMap = new Map();  // key: customer|year → running sum
+  const sortedForYtd = [...allRows].sort((a, b) =>
+    (a.customer_code + (a.kpi_month || '')).localeCompare(b.customer_code + (b.kpi_month || '')));
+  for (const r of sortedForYtd) {
+    const yr = (r.kpi_month || '').slice(0, 4);
+    const key = `${r.customer_code}|${yr}`;
+    const prev = ytdMap.get(key) || 0;
+    const ytd = prev + (r.sales || 0);
+    ytdMap.set(key, ytd);
+    r._sales_ytd = ytd;
+  }
+
+  // Read field, with D1 rename fallback + ytd injection
+  const getField = (r, c) => {
+    if (c === 'visit_success_rate') return r.visit_success_rate ?? r.strike_rate ?? '';
+    if (c === 'sales_ytd') return r._sales_ytd ?? '';
+    return r[c] ?? '';
+  };
+
   const s1Data = [s1cols.map(c => c.replace(/_/g, ' '))];
-  for (const r of allRows) s1Data.push(s1cols.map(c => r[c] ?? ''));
+  for (const r of allRows) s1Data.push(s1cols.map(c => getField(r, c)));
   const ws1 = XLSX.utils.aoa_to_sheet(s1Data);
   XLSX.utils.book_append_sheet(wb, ws1, '1_Outlet_Database');
 
@@ -2733,10 +3549,12 @@ async function exportExcel() {
   const s2Data = [[`Snapshot Roll-up | Latest Month: ${latestMo}`], []];
   // Track which (row, col) cells should be formatted as decimal
   const s2DecimalCells = []; // [{r, c, format}]
+  // F2: D1 rename + add Strike Rate (outlet) + Bills per ASO at end
   const s2HeaderCols = ['Sales', 'Active', 'N Outlets', 'Coverage', '%ASO',
                         'N Invoices', 'Drop', 'Visit Call', 'Visit Planned',
-                        'Strike Rate', '%Extra', 'PFS Avg', 'SKU/Outlet Avg',
-                        'Visit Compliance', 'Uplift'];
+                        'Visit Success Rate', '%Extra', 'PFS Avg', 'SKU/Outlet Avg',
+                        'Visit Compliance', 'Uplift',
+                        'Strike Rate', 'Bills per ASO'];
 
   const buildSection = (df, groupCols, title) => {
     s2Data.push([title]);
@@ -2756,9 +3574,13 @@ async function exportExcel() {
       const n_outlets = uniq(rs.map(r => r.customer_code)).length;
       const uplift = sum(rs.filter(r => r.primary_action !== 'A00_no_action').map(r => r.expected_uplift_thb));
       const sku_avg = n_outlets > 0 ? sum(rs.map(r => r.sku_per_outlet || 0)) / n_outlets : 0;
+      // F2: Core Eq (%ASO) only valid for Presales. Null → blank cell in xlsx.
+      const hasPresales = rs.some(r => r.channel === 'Presales');
+      const hasNonPresales = rs.some(r => r.channel && r.channel !== 'Presales');
+      const coreEqValid = hasPresales || !hasNonPresales;
       rows.push([
         ...keys, sales, active, n_outlets, coverage,
-        coverage > 0 ? active / coverage : 0,
+        coreEqValid && coverage > 0 ? active / coverage : null,
         bills, bills > 0 ? sales / bills : 0, visit, planned,
         visit > 0 ? succ / visit : 0,
         planned > 0 ? extra / planned : 0,
@@ -2766,6 +3588,9 @@ async function exportExcel() {
         sku_avg,
         mean(rs.map(r => r.visit_compliance)) || 0,
         uplift,
+        // F2 STEP 1 additions
+        coreEqValid && coverage > 0 ? active / coverage : null,    // Strike Rate (outlet, dup of %ASO)
+        coreEqValid && active > 0   ? bills  / active   : null,    // Bills per ASO
       ]);
     }
     // Total row
@@ -2780,9 +3605,13 @@ async function exportExcel() {
     const n_outlets = uniq(df.map(r => r.customer_code)).length;
     const uplift = sum(df.filter(r => r.primary_action !== 'A00_no_action').map(r => r.expected_uplift_thb));
     const sku_avg = n_outlets > 0 ? sum(df.map(r => r.sku_per_outlet || 0)) / n_outlets : 0;
+    // F2: same Core Eq rule for section TOTAL
+    const totHasPresales = df.some(r => r.channel === 'Presales');
+    const totHasNonPresales = df.some(r => r.channel && r.channel !== 'Presales');
+    const totCoreEqValid = totHasPresales || !totHasNonPresales;
     rows.push([
       ...groupCols.map(() => 'TOTAL'), sales, active, n_outlets, coverage,
-      coverage > 0 ? active / coverage : 0,
+      totCoreEqValid && coverage > 0 ? active / coverage : null,
       bills, bills > 0 ? sales / bills : 0, visit, planned,
       visit > 0 ? succ / visit : 0,
       planned > 0 ? extra / planned : 0,
@@ -2790,6 +3619,9 @@ async function exportExcel() {
       sku_avg,
       mean(df.map(r => r.visit_compliance)) || 0,
       uplift,
+      // F2 STEP 1 additions (mirror data rows)
+      totCoreEqValid && coverage > 0 ? active / coverage : null,    // Strike Rate (outlet)
+      totCoreEqValid && active > 0   ? bills  / active   : null,    // Bills per ASO
     ]);
     // Record decimal cells (PFS Avg at offset+11, SKU/Outlet Avg at offset+12, Compliance at offset+13)
     const headerRowIdx = s2Data.length - 1; // header row just pushed
@@ -2799,7 +3631,7 @@ async function exportExcel() {
       const baseCol = groupCols.length;
       // %ASO at baseCol+4 (percentage)
       s2DecimalCells.push({ r: rowIdx, c: baseCol + 4, format: '0.0%' });
-      // Strike Rate, %Extra at baseCol+9, baseCol+10
+      // Visit Success Rate, %Extra at baseCol+9, baseCol+10
       s2DecimalCells.push({ r: rowIdx, c: baseCol + 9, format: '0.0%' });
       s2DecimalCells.push({ r: rowIdx, c: baseCol + 10, format: '0.0%' });
       // PFS Avg at baseCol+11, SKU at baseCol+12 (decimal)
@@ -2807,6 +3639,9 @@ async function exportExcel() {
       s2DecimalCells.push({ r: rowIdx, c: baseCol + 12, format: '0.0' });
       // Visit Compliance at baseCol+13 (pct)
       s2DecimalCells.push({ r: rowIdx, c: baseCol + 13, format: '0.0%' });
+      // F2 NEW: Strike Rate (outlet) at baseCol+15 (pct), Bills per ASO at baseCol+16 (decimal)
+      s2DecimalCells.push({ r: rowIdx, c: baseCol + 15, format: '0.0%' });
+      s2DecimalCells.push({ r: rowIdx, c: baseCol + 16, format: '0.00' });
     }
     s2Data.push(...rows);
     s2Data.push([]);
@@ -2849,7 +3684,7 @@ async function exportExcel() {
   const buildTrend = (df, groupCols, title) => {
     s4Data.push([title]);
     s4Data.push([...groupCols, 'Month', 'Sales', 'Active', 'Coverage', '%ASO',
-                 'Drop', 'Strike Rate', '%Extra', 'PFS Avg', 'SKU/Outlet Avg',
+                 'Drop', 'Visit Success Rate', '%Extra', 'PFS Avg', 'SKU/Outlet Avg',
                  'Visit Compliance', 'Uplift', 'Sales MoM%']);
     // Group by entity x month
     const entityMonthKey = r => groupCols.map(c => r[c]).join('|') + '__' + r.kpi_month;
@@ -2869,9 +3704,13 @@ async function exportExcel() {
       const n_outlets = uniq(rs.map(r => r.customer_code)).length;
       const uplift = sum(rs.filter(r => r.primary_action !== 'A00_no_action').map(r => r.expected_uplift_thb));
       const sku_avg = n_outlets > 0 ? sum(rs.map(r => r.sku_per_outlet || 0)) / n_outlets : 0;
+      // F2: Core Eq (%ASO) only valid for Presales — null for non-Presales groups so cell renders blank
+      const hasPresales = rs.some(r => r.channel === 'Presales');
+      const hasNonPresales = rs.some(r => r.channel && r.channel !== 'Presales');
+      const coreEqValid = hasPresales || !hasNonPresales;
       aggRows.push({
         keys, mo, sales, active, coverage,
-        aso: coverage > 0 ? active / coverage : 0,
+        aso: coreEqValid && coverage > 0 ? active / coverage : null,
         drop: bills > 0 ? sales / bills : 0,
         strike: visit > 0 ? succ / visit : 0,
         extra_pct: planned > 0 ? extra / planned : 0,
@@ -2923,8 +3762,12 @@ async function exportExcel() {
       const n_outlets = uniq(ms.map(r => r.customer_code)).length;
       const uplift = sum(ms.filter(r => r.primary_action !== 'A00_no_action').map(r => r.expected_uplift_thb));
       const sku_avg = n_outlets > 0 ? sum(ms.map(r => r.sku_per_outlet || 0)) / n_outlets : 0;
+      // F2: Core Eq rule
+      const moHasPresales = ms.some(r => r.channel === 'Presales');
+      const moHasNonPresales = ms.some(r => r.channel && r.channel !== 'Presales');
+      const moCoreEqValid = moHasPresales || !moHasNonPresales;
       s4Data.push([...groupCols.map(() => 'TOTAL'), mo, sales, active, coverage,
-                   coverage > 0 ? active / coverage : 0,
+                   moCoreEqValid && coverage > 0 ? active / coverage : null,
                    bills > 0 ? sales / bills : 0,
                    visit > 0 ? succ / visit : 0,
                    planned > 0 ? extra / planned : 0,
@@ -3097,6 +3940,14 @@ function init() {
 
   // Trend level
   document.getElementById('trend-level').addEventListener('change', renderTrend);
+  // F2 issue 4: Diagnostics level selector
+  const diagLevelEl = document.getElementById('diag-level');
+  if (diagLevelEl) {
+    diagLevelEl.addEventListener('change', () => {
+      const rows = applyFilters(getAllRows());
+      renderDiagnostics(rows);
+    });
+  }
 
   // Export
   document.getElementById('btn-export-csv').addEventListener('click', exportCSV);
@@ -3172,6 +4023,10 @@ async function applySettings() {
     for (const dc in APP.data) {
       const rows = APP.data[dc].rows;
       recomputeScoringAndActions(rows, cfg);
+      // F2: severity depends on quadrant (which scoring may have changed) →
+      // force re-normalize by clearing the cached fields, then recompute.
+      for (const r of rows) { delete r.severity; delete r.reasoning_text; }
+      normalizeFactRows(rows);
       await dbSet(dc, { ...APP.data[dc], rows, dc_code: dc, processed_at: new Date().toISOString() });
     }
     refreshFilters();
@@ -3245,6 +4100,18 @@ function recomputeScoringAndActions(rows, cfg) {
     r.action_reason = '';
     r.expected_uplift_thb = 0;
     r.uplift_confidence = '—';
+
+    // F2 G2: same Credit/non-Presales guard as buildOutletMonthly — hold out
+    // until a Credit model is designed. Placeholder, not permanent dropout.
+    if (r.channel && r.channel !== 'Presales') {
+      r.primary_action = 'A99_pending_model';
+      r.action_reason = 'Credit model pending';
+      r.expected_uplift_thb = null;
+      r.uplift_confidence = 'N/A';
+      // Clean up temp peer fields before continuing (TOTAL block still cleans them, but be safe)
+      delete r._sku_med; delete r._pfs_med; delete r._strike_med; delete r._value_med; delete r._drop_med;
+      continue;
+    }
 
     const order = ['A02_demote_f2_to_f1', 'A05_reactivate', 'A01_promote_f1_to_f2',
                    'A06_strike_rate_recovery', 'A03_pfs_coaching', 'A04_sku_expansion'];
@@ -3342,6 +4209,9 @@ async function loadDemoData() {
       for (let i = 0; i < cols.length; i++) o[cols[i]] = arr[i];
       return o;
     });
+
+    // F2: backfill derived fields if not present (old demo dumps lack them)
+    normalizeFactRows(rows);
 
     const months = uniq(rows.map(r => r.kpi_month)).sort();
     const dc_code = '302';
