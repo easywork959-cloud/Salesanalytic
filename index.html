@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sales Analytics — DC Performance</title>
+<title data-i18n="app.titleSub">Sales Analytics — DC Performance</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -18,6 +18,7 @@
   .b-amber  { background: #FFFBEB; color: #B45309; }
   .b-rose   { background: #FFF1F2; color: #BE123C; }
   .b-slate  { background: #F1F5F9; color: #475569; }
+  .b-emerald{ background: #ECFDF5; color: #047857; }
   .drop-zone { transition: all 0.15s ease; }
   .drop-zone.drag-over { background: #EFF6FF !important; border-color: #3B82F6 !important; }
   /* Custom scroll */
@@ -60,15 +61,20 @@
   <!-- Header -->
   <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
     <div>
-      <h1 class="text-lg sm:text-xl font-semibold text-slate-900">Sales Analytics</h1>
-      <p class="text-xs text-slate-500 hidden sm:block">FMCG DC Performance — Outlet scoring &amp; action planning</p>
+      <h1 class="text-lg sm:text-xl font-semibold text-slate-900" data-i18n="app.title">Sales Analytics</h1>
+      <p class="text-xs text-slate-500 hidden sm:block" data-i18n="app.subtitle">FMCG DC Performance — Outlet scoring &amp; action planning</p>
     </div>
     <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
-      <span id="storage-info" class="text-xs text-slate-500">No data loaded</span>
-      <button id="btn-export-excel" class="px-3 py-1.5 text-xs sm:text-sm bg-slate-900 text-white rounded-lg hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed" disabled>
+      <!-- F2: TH/EN language toggle (default = TH) -->
+      <div class="inline-flex rounded-lg border border-slate-200 overflow-hidden">
+        <button id="lang-th" type="button" class="px-2.5 py-1.5 text-xs font-medium bg-slate-900 text-white">🌐 ไทย</button>
+        <button id="lang-en" type="button" class="px-2.5 py-1.5 text-xs font-medium bg-white text-slate-700 hover:bg-slate-50">EN</button>
+      </div>
+      <span id="storage-info" class="text-xs text-slate-500" data-i18n="storage.empty">No data loaded</span>
+      <button id="btn-export-excel" class="px-3 py-1.5 text-xs sm:text-sm bg-slate-900 text-white rounded-lg hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed" disabled data-i18n="btn.exportExcel">
         Export Excel
       </button>
-      <button id="btn-export-csv" class="px-3 py-1.5 text-xs sm:text-sm border border-slate-200 rounded-lg hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed" disabled>
+      <button id="btn-export-csv" class="px-3 py-1.5 text-xs sm:text-sm border border-slate-200 rounded-lg hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed" disabled data-i18n="btn.exportCSV">
         Export CSV
       </button>
     </div>
@@ -76,13 +82,13 @@
 
   <!-- Tabs -->
   <div class="flex gap-2 mb-3 border-b border-slate-200 pb-2 overflow-x-auto whitespace-nowrap">
-    <div class="tab-btn active flex-shrink-0" data-tab="upload">📤 Upload</div>
-    <div class="tab-btn flex-shrink-0" data-tab="overview">📊 Overview</div>
-    <div class="tab-btn flex-shrink-0" data-tab="outlets">🏪 Outlets</div>
-    <div class="tab-btn flex-shrink-0" data-tab="actions">🎯 Actions</div>
-    <div class="tab-btn flex-shrink-0" data-tab="diagnostics">🔬 Diagnostics</div>
-    <div class="tab-btn flex-shrink-0" data-tab="trend">📈 Trend</div>
-    <div class="tab-btn flex-shrink-0" data-tab="settings">⚙️ Settings</div>
+    <div class="tab-btn active flex-shrink-0" data-tab="upload"    data-i18n="tab.upload">📤 Upload</div>
+    <div class="tab-btn flex-shrink-0"        data-tab="overview"  data-i18n="tab.overview">📊 Overview</div>
+    <div class="tab-btn flex-shrink-0"        data-tab="outlets"   data-i18n="tab.outlets">🏪 Outlets</div>
+    <div class="tab-btn flex-shrink-0"        data-tab="actions"   data-i18n="tab.actions">🎯 Actions</div>
+    <div class="tab-btn flex-shrink-0"        data-tab="diagnostics" data-i18n="tab.diagnostics">🔬 Diagnostics</div>
+    <div class="tab-btn flex-shrink-0"        data-tab="trend"     data-i18n="tab.trend">📈 Trend</div>
+    <div class="tab-btn flex-shrink-0"        data-tab="settings"  data-i18n="tab.settings">⚙️ Settings</div>
   </div>
 
   <!-- ============================================================
@@ -98,20 +104,22 @@
                 d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
         </svg>
       </div>
-      <h2 class="text-lg font-medium text-slate-900">Upload data for 1 DC</h2>
-      <p class="text-sm text-slate-500 mt-1 mb-4">Drag & drop or click to browse</p>
+      <h2 class="text-lg font-medium text-slate-900" data-i18n="upload.title">Upload data for 1 DC</h2>
+      <p class="text-sm text-slate-500 mt-1 mb-4" data-i18n="upload.hint">Drag & drop or click to browse</p>
       <input type="file" id="file-input" multiple class="hidden" accept=".xlsx,.xls">
       <div class="flex gap-2 justify-center">
         <button onclick="document.getElementById('file-input').click()"
-                class="px-4 py-2 bg-slate-900 text-white text-sm rounded-lg hover:bg-slate-800">
+                class="px-4 py-2 bg-slate-900 text-white text-sm rounded-lg hover:bg-slate-800"
+                data-i18n="upload.browse">
           Browse files
         </button>
         <button id="btn-load-demo"
-                class="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700">
+                class="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700"
+                data-i18n="upload.demo">
           🎬 Load Demo (DC 302)
         </button>
       </div>
-      <p class="text-xs text-slate-400 mt-4">
+      <p class="text-xs text-slate-400 mt-4" data-i18n="upload.accept">
         Accept any mix of Sellout / HH Transaction / ScoreAch files (1 or more of each).
         Multi-month files welcome.
       </p>
@@ -121,10 +129,10 @@
     <div id="file-staging" class="hidden mt-4">
       <div class="card p-4">
         <div class="flex items-center justify-between mb-3">
-          <h3 class="font-medium text-slate-900">Staged files</h3>
+          <h3 class="font-medium text-slate-900" data-i18n="upload.staged">Staged files</h3>
           <div class="flex gap-2">
-            <button id="btn-clear-files" class="text-xs text-slate-500 hover:text-slate-700">Clear</button>
-            <button id="btn-process" class="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            <button id="btn-clear-files" class="text-xs text-slate-500 hover:text-slate-700" data-i18n="upload.clear">Clear</button>
+            <button id="btn-process" class="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700" data-i18n="upload.process">
               Process this DC →
             </button>
           </div>
@@ -138,8 +146,8 @@
       <div class="flex items-center gap-3 mb-3">
         <div class="spinner"></div>
         <div>
-          <div class="font-medium text-slate-900" id="processing-title">Processing data...</div>
-          <div class="text-xs text-slate-500" id="processing-step">Initializing</div>
+          <div class="font-medium text-slate-900" id="processing-title" data-i18n="upload.processing">Processing data...</div>
+          <div class="text-xs text-slate-500" id="processing-step" data-i18n="upload.init">Initializing</div>
         </div>
       </div>
       <div class="w-full bg-slate-100 rounded-full h-2">
@@ -149,9 +157,9 @@
 
     <!-- Loaded DCs list -->
     <div class="mt-8">
-      <h3 class="font-medium text-slate-900 mb-3">Loaded DCs</h3>
+      <h3 class="font-medium text-slate-900 mb-3" data-i18n="storage.loaded">Loaded DCs</h3>
       <div id="dc-list" class="space-y-2">
-        <div class="card p-4 text-sm text-slate-400 italic">No DCs loaded yet — upload to get started</div>
+        <div class="card p-4 text-sm text-slate-400 italic" data-i18n="storage.noDcs">No DCs loaded yet — upload to get started</div>
       </div>
     </div>
 
@@ -165,21 +173,21 @@
     <!-- Filter bar -->
     <div class="card px-3 py-2 mb-4">
       <div class="flex flex-wrap items-center gap-2 text-xs">
-        <span class="text-slate-500 font-medium mr-1">FILTER</span>
+        <span class="text-slate-500 font-medium mr-1" data-i18n="filter.label">FILTER</span>
         <select id="filter-dc" class="flex-1 sm:flex-none min-w-[100px] px-2 py-1.5 sm:py-1 text-xs border border-slate-200 rounded bg-white">
-          <option value="">All DCs</option>
+          <option value="" data-i18n="filter.allDcs">All DCs</option>
         </select>
         <select id="filter-channel" class="flex-1 sm:flex-none min-w-[100px] px-2 py-1.5 sm:py-1 text-xs border border-slate-200 rounded bg-white">
-          <option value="">All Channels</option>
+          <option value="" data-i18n="filter.allChannels">All Channels</option>
         </select>
         <select id="filter-salesman" class="flex-1 sm:flex-none min-w-[100px] px-2 py-1.5 sm:py-1 text-xs border border-slate-200 rounded bg-white">
-          <option value="">All Salesmen</option>
+          <option value="" data-i18n="filter.allSalesmen">All Salesmen</option>
         </select>
         <select id="filter-month" class="flex-1 sm:flex-none min-w-[100px] px-2 py-1.5 sm:py-1 text-xs border border-slate-200 rounded bg-white">
-          <option value="">Latest Month</option>
+          <option value="" data-i18n="filter.latestMonth">Latest Month</option>
         </select>
         <span id="filter-context" class="text-slate-400 ml-2 hidden sm:inline"></span>
-        <button id="btn-reset-filter" class="text-slate-500 hover:text-slate-800 ml-auto px-2">Reset</button>
+        <button id="btn-reset-filter" class="text-slate-500 hover:text-slate-800 ml-auto px-2" data-i18n="filter.reset">Reset</button>
       </div>
     </div>
 
@@ -189,7 +197,7 @@
          positions or width). Currently: slot 1 = Elasticity. Slot 2 reserved for
          %Promotion (future Diagnostic per F2_Integration_Map sec 4). -->
     <div class="flex items-center flex-wrap gap-2 mb-3" id="guardrail-row">
-      <span class="text-[10px] text-slate-400 uppercase tracking-wider mr-1">Guardrail</span>
+      <span class="text-[10px] text-slate-400 uppercase tracking-wider mr-1" data-i18n="h.guardrail">Guardrail</span>
       <div id="guardrail-elasticity"></div>
       <div id="guardrail-promotion"></div>
       <!-- future badges go here as additional <div id="guardrail-*"></div> -->
@@ -198,7 +206,7 @@
     <!-- ============ Section 1: 12-Month Trend ============ -->
     <div class="mb-5">
       <div class="flex items-baseline justify-between mb-2">
-        <h2 class="text-xs font-semibold text-slate-700 uppercase tracking-wider">12-Month Trend</h2>
+        <h2 class="text-xs font-semibold text-slate-700 uppercase tracking-wider" data-i18n="h.trend12">12-Month Trend</h2>
         <span class="text-[11px] text-slate-400" id="trend-months-label">—</span>
       </div>
 
@@ -207,7 +215,7 @@
 
         <div class="col-span-12 md:col-span-6 lg:col-span-4 card p-3">
           <div class="flex items-baseline justify-between mb-1">
-            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">Sales</h4>
+            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide"><span data-i18n="kpi.sales">Sales</span></h4>
             <span class="badge b-slate" id="kpi-sales-mom">—</span>
           </div>
           <div class="flex items-baseline gap-2 mb-1">
@@ -222,7 +230,7 @@
 
         <div class="col-span-12 md:col-span-6 lg:col-span-4 card p-3">
           <div class="flex items-baseline justify-between mb-1">
-            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide" title="N Invoices ÷ Active outlets. Part of Core Equation: Sales = Coverage × Strike × Bills/ASO × Drop">Bills per ASO</h4>
+            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide" title="N Invoices ÷ Active outlets. Part of Core Equation: Sales = Coverage × Strike × Bills/ASO × Drop"><span data-i18n="kpi.bills">Bills per ASO</span></h4>
             <span class="badge b-slate" id="kpi-bills-mom">—</span>
           </div>
           <div class="flex items-baseline gap-2 mb-1">
@@ -237,7 +245,7 @@
 
         <div class="col-span-12 md:col-span-6 lg:col-span-4 card p-3">
           <div class="flex items-baseline justify-between mb-1">
-            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">Drop Size</h4>
+            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide"><span data-i18n="kpi.drop">Drop Size</span></h4>
             <span class="badge b-slate" id="kpi-drop-mom">—</span>
           </div>
           <div class="flex items-baseline gap-2 mb-1">
@@ -257,7 +265,7 @@
 
         <div class="col-span-12 md:col-span-6 lg:col-span-4 card p-3">
           <div class="flex items-baseline justify-between mb-1">
-            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">Active Outlets</h4>
+            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide"><span data-i18n="kpi.active">Active Outlets</span></h4>
             <span class="badge b-slate" id="kpi-active-mom">—</span>
           </div>
           <div class="flex items-baseline gap-2 mb-1">
@@ -272,7 +280,7 @@
 
         <div class="col-span-12 md:col-span-6 lg:col-span-4 card p-3">
           <div class="flex items-baseline justify-between mb-1">
-            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">Coverage (Plan)</h4>
+            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide" data-i18n="kpi.coverage">Coverage (Plan)</h4>
             <span class="badge b-slate" id="kpi-coverage-mom">—</span>
           </div>
           <div class="flex items-baseline gap-2 mb-1">
@@ -287,7 +295,7 @@
 
         <div class="col-span-12 md:col-span-6 lg:col-span-4 card p-3">
           <div class="flex items-baseline justify-between mb-1">
-            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">SKU / Outlet</h4>
+            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide" data-i18n="kpi.sku">SKU / Outlet</h4>
             <span class="badge b-slate" id="kpi-sku-mom">—</span>
           </div>
           <div class="flex items-baseline gap-2 mb-1">
@@ -307,7 +315,7 @@
 
         <div class="col-span-12 md:col-span-6 lg:col-span-4 card p-3">
           <div class="flex items-baseline justify-between mb-1">
-            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">Visit Call</h4>
+            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide"><span data-i18n="kpi.visit">Visit Call</span></h4>
             <span class="badge b-slate" id="kpi-visits-mom">—</span>
           </div>
           <div class="flex items-baseline gap-2 mb-1">
@@ -322,7 +330,7 @@
 
         <div class="col-span-12 md:col-span-6 lg:col-span-4 card p-3">
           <div class="flex items-baseline justify-between mb-1">
-            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">%Extra Call</h4>
+            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide" data-i18n="kpi.extra">%Extra Call</h4>
             <span class="badge b-slate" id="kpi-extra-mom">—</span>
           </div>
           <div class="flex items-baseline gap-2 mb-1">
@@ -337,7 +345,7 @@
 
         <div class="col-span-12 md:col-span-6 lg:col-span-4 card p-3">
           <div class="flex items-baseline justify-between mb-1">
-            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide" title="Strike Rate (outlet-level) = Active outlets ÷ Coverage. Part of Core Equation. Visit-level Strike (Successful÷Visit) moved to Diagnostics as 'Visit Success Rate'.">Strike Rate</h4>
+            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide" title="Strike Rate (outlet-level) = Active outlets ÷ Coverage. Part of Core Equation. Visit-level Strike (Successful÷Visit) moved to Diagnostics as 'Visit Success Rate'."><span data-i18n="kpi.strike">Strike Rate</span></h4>
             <span class="badge b-slate" id="kpi-strike-mom">—</span>
           </div>
           <div class="flex items-baseline gap-2 mb-1">
@@ -352,27 +360,12 @@
 
       </div>
 
-      <!-- Row 4: Score & Pipeline (PFS / Compliance / Uplift) -->
+      <!-- Row 4: Score & Pipeline (Compliance / PFS / AEO / Uplift) — 4 cards: desktop row, mobile 2×2 -->
       <div class="grid grid-cols-12 gap-3">
 
-        <div class="col-span-12 md:col-span-6 lg:col-span-4 card p-3">
+        <div class="col-span-6 lg:col-span-3 card p-3">
           <div class="flex items-baseline justify-between mb-1">
-            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">PFS Score</h4>
-            <span class="badge b-slate" id="kpi-pfs-mom">—</span>
-          </div>
-          <div class="flex items-baseline gap-2 mb-1">
-            <span class="text-xl font-bold text-slate-900" id="kpi-pfs">—</span>
-          </div>
-          <div class="text-[10px] text-slate-500 mb-2">
-            vs 3M: <span class="font-semibold text-slate-700" id="kpi-pfs-vs3m">—</span>
-            · Top Q SM: <span class="font-semibold text-slate-700" id="kpi-pfs-topq">—</span>
-          </div>
-          <div style="position:relative;height:140px"><canvas id="trend-pfs"></canvas></div>
-        </div>
-
-        <div class="col-span-12 md:col-span-6 lg:col-span-4 card p-3">
-          <div class="flex items-baseline justify-between mb-1">
-            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">Visit Compliance</h4>
+            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide"><span data-i18n="kpi.compliance">Visit Compliance</span></h4>
             <span class="badge b-slate" id="kpi-compliance-mom">—</span>
           </div>
           <div class="flex items-baseline gap-2 mb-1">
@@ -385,9 +378,39 @@
           <div style="position:relative;height:140px"><canvas id="trend-compliance"></canvas></div>
         </div>
 
-        <div class="col-span-12 md:col-span-6 lg:col-span-4 card p-3">
+        <div class="col-span-6 lg:col-span-3 card p-3">
           <div class="flex items-baseline justify-between mb-1">
-            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">Uplift Pipeline</h4>
+            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide"><span data-i18n="kpi.pfs">PFS Score</span></h4>
+            <span class="badge b-slate" id="kpi-pfs-mom">—</span>
+          </div>
+          <div class="flex items-baseline gap-2 mb-1">
+            <span class="text-xl font-bold text-slate-900" id="kpi-pfs">—</span>
+          </div>
+          <div class="text-[10px] text-slate-500 mb-2">
+            vs 3M: <span class="font-semibold text-slate-700" id="kpi-pfs-vs3m">—</span>
+            · Top Q SM: <span class="font-semibold text-slate-700" id="kpi-pfs-topq">—</span>
+          </div>
+          <div style="position:relative;height:140px"><canvas id="trend-pfs"></canvas></div>
+        </div>
+
+        <div class="col-span-6 lg:col-span-3 card p-3">
+          <div class="flex items-baseline justify-between mb-1">
+            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide"><span data-i18n="kpi.aeo">AEO Coverage</span></h4>
+            <span class="badge b-slate" id="kpi-aeo-mom">—</span>
+          </div>
+          <div class="flex items-baseline gap-2 mb-1">
+            <span class="text-xl font-bold text-slate-900" id="kpi-aeo">—</span>
+          </div>
+          <div class="text-[10px] text-slate-500 mb-2">
+            <span id="kpi-aeo-count">—</span>
+            · vs 3M: <span class="font-semibold text-slate-700" id="kpi-aeo-vs3m">—</span>
+          </div>
+          <div style="position:relative;height:140px"><canvas id="trend-aeo"></canvas></div>
+        </div>
+
+        <div class="col-span-6 lg:col-span-3 card p-3">
+          <div class="flex items-baseline justify-between mb-1">
+            <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide"><span data-i18n="kpi.uplift">Uplift Pipeline</span></h4>
             <span class="badge b-slate" id="kpi-uplift-mom">—</span>
           </div>
           <div class="flex items-baseline gap-2 mb-1">
@@ -405,27 +428,27 @@
 
     <!-- ============ Section 2: Distribution ============ -->
     <div class="mb-5">
-      <h2 class="text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Outlet Distribution</h2>
+      <h2 class="text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2" data-i18n="h.outletDist">Outlet Distribution</h2>
       <div class="grid grid-cols-12 gap-3">
 
         <!-- Channel Mix doughnut -->
         <div class="col-span-12 md:col-span-6 lg:col-span-4 card p-3">
-          <h4 class="text-xs font-medium text-slate-700 mb-2">Sales by Channel</h4>
+          <h4 class="text-xs font-medium text-slate-700 mb-2" data-i18n="h.salesByChannel">Sales by Channel</h4>
           <div style="position:relative;height:240px"><canvas id="chart-channel"></canvas></div>
         </div>
 
         <!-- Outlet Quadrant 3×3 -->
         <div class="col-span-12 md:col-span-6 lg:col-span-4 card p-3">
-          <h4 class="text-xs font-medium text-slate-700 mb-2">Outlet Quadrant (Active only)</h4>
+          <h4 class="text-xs font-medium text-slate-700 mb-2" data-i18n="h.outletQuad">Outlet Quadrant (Active only)</h4>
           <div id="quadrant-grid" class="grid grid-cols-3 gap-1.5 text-center text-xs"></div>
           <p class="text-[10px] text-slate-400 mt-2 text-center">Performance ↑ × Health → · Numbers = outlet count</p>
         </div>
 
         <!-- Outlet Lifecycle -->
         <div class="col-span-12 md:col-span-6 lg:col-span-4 card p-3">
-          <h4 class="text-xs font-medium text-slate-700 mb-2">Outlet Lifecycle</h4>
+          <h4 class="text-xs font-medium text-slate-700 mb-2" data-i18n="h.lifecycle">Outlet Lifecycle</h4>
           <div id="lifecycle-bars"></div>
-          <p class="text-[10px] text-slate-400 mt-2">By days since last NET-positive sale</p>
+          <p class="text-[10px] text-slate-400 mt-2" data-i18n="h.lifecycleSub">By days since last NET-positive sale</p>
         </div>
 
       </div>
@@ -433,24 +456,24 @@
 
     <!-- ============ Section 3: Action Priorities & Rankings ============ -->
     <div>
-      <h2 class="text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Action Priorities &amp; Rankings</h2>
+      <h2 class="text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2" data-i18n="h.actionRank">Action Priorities &amp; Rankings</h2>
       <div class="grid grid-cols-12 gap-3">
 
         <!-- Action Priority bar chart -->
         <div class="col-span-12 md:col-span-6 lg:col-span-4 card p-3">
-          <h4 class="text-xs font-medium text-slate-700 mb-2">Action Priority (Uplift)</h4>
+          <h4 class="text-xs font-medium text-slate-700 mb-2" data-i18n="h.actionPriority">Action Priority (Uplift)</h4>
           <div style="position:relative;height:240px"><canvas id="chart-actions"></canvas></div>
         </div>
 
         <!-- Top Salesman list with bars -->
         <div class="col-span-12 md:col-span-6 lg:col-span-4 card p-3">
-          <h4 class="text-xs font-medium text-slate-700 mb-2">Top Salesman (Sales)</h4>
+          <h4 class="text-xs font-medium text-slate-700 mb-2" data-i18n="h.topSalesman">Top Salesman (Sales)</h4>
           <div id="list-salesman" class="space-y-1.5 text-xs"></div>
         </div>
 
         <!-- Top Uplift Outlets list -->
         <div class="col-span-12 md:col-span-6 lg:col-span-4 card p-3">
-          <h4 class="text-xs font-medium text-slate-700 mb-2">Top Uplift Outlets</h4>
+          <h4 class="text-xs font-medium text-slate-700 mb-2" data-i18n="h.topUplift">Top Uplift Outlets</h4>
           <div id="list-uplift" class="space-y-1.5 text-xs"></div>
         </div>
 
@@ -464,13 +487,13 @@
        ============================================================ -->
   <section id="tab-outlets" class="tab-panel hidden">
     <div class="card p-4 mb-4 flex items-center gap-3 flex-wrap">
-      <span class="text-xs text-slate-500">Current filter applies. Sort by:</span>
+      <span class="text-xs text-slate-500" data-i18n="h.sortBy">Current filter applies. Sort by:</span>
       <select id="outlet-sort" class="px-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white">
-        <option value="expected_uplift_thb_desc">Uplift (high → low)</option>
-        <option value="sales_desc">Sales (high → low)</option>
-        <option value="day_since_last_sales_desc">Days Since Sale (high → low)</option>
-        <option value="performance_score_asc">Performance Score (low → high)</option>
-        <option value="health_score_asc">Health Score (low → high)</option>
+        <option value="expected_uplift_thb_desc" data-i18n="sort.uplift">Uplift (high → low)</option>
+        <option value="sales_desc" data-i18n="sort.sales">Sales (high → low)</option>
+        <option value="day_since_last_sales_desc" data-i18n="sort.days">Days Since Sale (high → low)</option>
+        <option value="performance_score_asc" data-i18n="sort.perf">Performance Score (low → high)</option>
+        <option value="health_score_asc" data-i18n="sort.health">Health Score (low → high)</option>
       </select>
       <input id="outlet-search" type="text" placeholder="Search shop code or name..."
              class="px-3 py-1.5 text-sm border border-slate-200 rounded-lg flex-1 max-w-xs">
@@ -485,9 +508,9 @@
       </table>
     </div>
     <div class="flex items-center justify-between mt-3 text-sm">
-      <button id="outlet-prev" class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-white disabled:opacity-40">Prev</button>
+      <button id="outlet-prev" class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-white disabled:opacity-40" data-i18n="btn.prev">Prev</button>
       <span id="outlet-page-info" class="text-slate-500"></span>
-      <button id="outlet-next" class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-white disabled:opacity-40">Next</button>
+      <button id="outlet-next" class="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-white disabled:opacity-40" data-i18n="btn.next">Next</button>
     </div>
   </section>
 
@@ -497,30 +520,67 @@
   <section id="tab-actions" class="tab-panel hidden">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
       <div class="card p-5">
-        <h4 class="text-sm font-medium text-slate-900 mb-3">Action Summary</h4>
+        <h4 class="text-sm font-medium text-slate-900 mb-3" data-i18n="actions.summary">Action Summary</h4>
         <div id="action-summary" class="space-y-2 text-sm"></div>
       </div>
       <div class="card p-5">
-        <h4 class="text-sm font-medium text-slate-900 mb-3">Top 10 Highest Uplift Outlets</h4>
+        <h4 class="text-sm font-medium text-slate-900 mb-3" data-i18n="actions.topUplift">Top 10 Highest Uplift Outlets</h4>
         <div id="top-uplift-list" class="space-y-1 text-sm"></div>
       </div>
     </div>
     <div class="card p-5">
-      <h4 class="text-sm font-medium text-slate-900 mb-3">Action Plan Details</h4>
+      <h4 class="text-sm font-medium text-slate-900 mb-3" data-i18n="actions.plan">Action Plan Details</h4>
       <div class="overflow-x-auto">
         <table class="data-table w-full">
           <thead class="bg-slate-50 border-b border-slate-200">
             <tr>
-              <th class="text-left px-3 py-2">Shop</th>
-              <th class="text-left px-3 py-2">Salesman</th>
-              <th class="text-left px-3 py-2">Action</th>
-              <th class="num-right px-3 py-2">Uplift (THB)</th>
-              <th class="text-left px-3 py-2">Confidence</th>
-              <th class="num-right px-3 py-2">Perf</th>
-              <th class="num-right px-3 py-2">Health</th>
+              <th class="text-left px-3 py-2" data-i18n="col.shopName">Shop</th>
+              <th class="text-left px-3 py-2" data-i18n="col.salesman">Salesman</th>
+              <th class="text-left px-3 py-2" data-i18n="col.action">Action</th>
+              <th class="num-right px-3 py-2" data-i18n="col.upliftThb">Uplift (THB)</th>
+              <th class="text-left px-3 py-2" data-i18n="col.confidence">Confidence</th>
+              <th class="num-right px-3 py-2" data-i18n="col.perf">Perf</th>
+              <th class="num-right px-3 py-2" data-i18n="col.health">Health</th>
             </tr>
           </thead>
           <tbody id="action-table-body" class="divide-y divide-slate-100"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- RS Route Optimize: Watchlist -->
+    <div class="card p-5 mt-4">
+      <h4 class="text-sm font-medium text-slate-900 mb-1" data-i18n="ro.heading">RS Route Optimize — ร้านที่ต้องจัดการ</h4>
+      <p class="text-xs text-slate-500 mb-3" data-i18n="ro.sub">ร้านที่ตก LowP_LowH — ระบบวินิจฉัยว่าตกเพราะ route (แก้ได้) หรือเพราะร้านเอง (ลด/ตัด) · ดูหลักฐานข้าง status แล้วลงมือได้เลย</p>
+      <div class="flex flex-wrap items-center gap-3 mb-3 text-xs">
+        <div class="text-slate-600"><span data-i18n="ro.totalLabel">ร้านต้องจัดการ</span>: <span class="font-bold text-slate-900" id="ro-total">—</span></div>
+        <div class="text-slate-600"><span data-i18n="ro.loseLabel">ยอดที่จะเสีย (ตัด/ลด)</span>: <span class="font-bold text-rose-600" id="ro-lose">—</span></div>
+        <select id="ro-filter" class="ml-auto px-2 py-1.5 text-xs border border-slate-200 rounded bg-white">
+          <option value="" data-i18n="ro.all">ทุกสถานะ</option>
+          <option value="พิจารณาตัด">พิจารณาตัด</option>
+          <option value="ลดความถี่">ลดความถี่</option>
+          <option value="แก้ Route Quality">แก้ Route Quality</option>
+          <option value="ทำให้ร้านกลับมาซื้อ">ทำให้ร้านกลับมาซื้อ</option>
+          <option value="พัฒนา">พัฒนา</option>
+          <option value="ซื้อไม่สม่ำเสมอ">ซื้อไม่สม่ำเสมอ</option>
+          <option value="เพิ่มความถี่">เพิ่มความถี่</option>
+          <option value="เฝ้าระวัง">เฝ้าระวัง</option>
+          <option value="รอประเมิน">รอประเมิน</option>
+        </select>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="data-table w-full">
+          <thead class="bg-slate-50 border-b border-slate-200">
+            <tr>
+              <th class="text-left px-3 py-2" data-i18n="col.shopName">ร้าน</th>
+              <th class="text-left px-3 py-2" data-i18n="col.salesman">สาย</th>
+              <th class="text-left px-3 py-2" data-i18n="ro.colSituation">สถานะ</th>
+              <th class="text-left px-3 py-2" data-i18n="ro.colSignal">สัญญาณ</th>
+              <th class="text-left px-3 py-2" data-i18n="ro.colEvidence">สรุปรายละเอียด</th>
+              <th class="num-right px-3 py-2" data-i18n="ro.colLose">ยอดที่จะเสีย</th>
+            </tr>
+          </thead>
+          <tbody id="ro-table-body" class="divide-y divide-slate-100"></tbody>
         </table>
       </div>
     </div>
@@ -531,20 +591,20 @@
        ============================================================ -->
   <section id="tab-diagnostics" class="tab-panel hidden">
     <div class="card p-3 mb-3">
-      <h3 class="font-semibold text-slate-900 mb-1">🔬 Diagnostics</h3>
+      <h3 class="font-semibold text-slate-900 mb-1" data-i18n="tab.diagnostics">🔬 Diagnostics</h3>
       <p class="text-xs text-slate-500">
         เครื่องมือวินิจฉัย Core Equation + benchmarks. Presales only — Credit/Other ยังไม่มี model.
-        <b>Bridge</b> = ที่มาของยอดเปลี่ยน · <b>B3</b> = เทียบ P75 SM · <b>%ASO Gate</b> = แยก F2 เป็น Keep/Back/Review.
+        <b data-i18n="h.bridge">Bridge</b> = ที่มาของยอดเปลี่ยน · <b>B3</b> = เทียบ P75 SM · <b data-i18n="h.asoGate">%ASO Gate</b> = แยก F2 เป็น Keep/Back/Review.
       </p>
     </div>
 
     <!-- Level selector: vินิจฉัยลงจากบน DC → Route → Outlet (per F2_Analysis_Layer sec 12.5) -->
     <div class="card p-3 mb-3 flex items-center gap-3 flex-wrap">
-      <span class="text-xs text-slate-500">Roll-up level:</span>
+      <span class="text-xs text-slate-500" data-i18n="diag.rollup">Roll-up level:</span>
       <select id="diag-level" class="px-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white">
         <option value="dc" selected>DC</option>
-        <option value="salesman">Salesman (Route)</option>
-        <option value="outlet">Outlet</option>
+        <option value="salesman" data-i18n="diag.salesman">Salesman (Route)</option>
+        <option value="outlet" data-i18n="diag.outlet">Outlet</option>
       </select>
       <span class="text-[10px] text-slate-400 italic">
         Channel locked to Presales (Credit/Other → N/A). Global filter still applies.
@@ -565,12 +625,12 @@
     <!-- Row: Bills total + Visit Success Rate (moved from Overview) -->
     <div class="grid grid-cols-12 gap-3 mb-3">
       <div class="col-span-12 md:col-span-6 lg:col-span-6 card p-3">
-        <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide mb-1">Bills (Invoices, total)</h4>
+        <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide mb-1" data-i18n="kpi.billsTotal">Bills (Invoices, total)</h4>
         <div class="text-xl font-bold text-slate-900" id="diag-bills-total">—</div>
         <div class="text-[10px] text-slate-500 mt-1">Raw count moved here from Overview. For per-ASO ratio see Overview card.</div>
       </div>
       <div class="col-span-12 md:col-span-6 lg:col-span-6 card p-3">
-        <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide mb-1">Visit Success Rate (visit-level)</h4>
+        <h4 class="text-[11px] font-medium text-slate-500 uppercase tracking-wide mb-1" data-i18n="kpi.visitSucc">Visit Success Rate (visit-level)</h4>
         <div class="text-xl font-bold text-slate-900" id="diag-vsr">—</div>
         <div class="text-[10px] text-slate-500 mt-1">Successful Visits ÷ Visit Count. Was labeled "Strike Rate" before D1 rename. Outlet-level Strike (ASO/Coverage) is now on Overview.</div>
       </div>
@@ -578,7 +638,7 @@
 
     <!-- Bridge Analysis -->
     <div class="card p-3 mb-3">
-      <h4 class="text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">Bridge Analysis — MoM <span id="diag-bridge-level-label" class="text-[10px] text-slate-400 font-normal normal-case">(level: dc)</span></h4>
+      <h4 class="text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2"><span data-i18n="diag.bridgeMoM">Bridge Analysis — MoM</span> <span id="diag-bridge-level-label" class="text-[10px] text-slate-400 font-normal normal-case">(level: dc)</span></h4>
       <p class="text-[11px] text-slate-500 mb-2">
         ยอดเดือนนี้ vs เดือนก่อน — แตกที่มาของการเปลี่ยนแปลงตามแต่ละ Core Eq driver.
       </p>
@@ -587,7 +647,7 @@
 
     <!-- B3 Comparison -->
     <div class="card p-3 mb-3">
-      <h4 class="text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">B3 Comparison — vs Top Q (P75) <span id="diag-b3-level-label" class="text-[10px] text-slate-400 font-normal normal-case">(level: dc)</span></h4>
+      <h4 class="text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2"><span data-i18n="diag.b3">B3 Comparison — vs Top Q (P75)</span> <span id="diag-b3-level-label" class="text-[10px] text-slate-400 font-normal normal-case">(level: dc)</span></h4>
       <p class="text-[11px] text-slate-500 mb-2">
         ตำแหน่งปัจจุบันเทียบกับ Top Quartile. ที่ระดับ Salesman: P75 ข้าม Presales salesmen ของ DC. ที่ระดับ Outlet: P75 ของ outlets ใน quadrant.
       </p>
@@ -596,12 +656,12 @@
 
     <!-- %ASO Gate -->
     <div class="card p-3 mb-3">
-      <h4 class="text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">%ASO Gate — F2 routing</h4>
+      <h4 class="text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2" data-i18n="diag.asoRouting">%ASO Gate — F2 routing</h4>
       <p class="text-[11px] text-slate-500 mb-2">
         แยกร้าน F2 เป็น 3 กลุ่ม:
-        <b>A Keep</b> (active ≥67% ของ window) ·
-        <b>B Back to F1</b> (active ≤33%) ·
-        <b>C Review</b> (มิกซ์).
+        <b data-i18n="diag.aKeep">A Keep</b> (active ≥67% ของ window) ·
+        <b data-i18n="diag.bBack">B Back to F1</b> (active ≤33%) ·
+        <b data-i18n="diag.cReview">C Review</b> (มิกซ์).
       </p>
       <div id="diag-aso-gate" class="text-sm">—</div>
     </div>
@@ -615,7 +675,7 @@
     <div class="card p-4 mb-3">
       <p class="text-sm text-slate-700">
         ปรับเกณฑ์การให้คะแนน Performance/Health และค่า elasticity ของ Action ได้ที่นี่
-        เมื่อกด <b>Apply</b> ระบบจะ recompute scoring + uplift ทันที (ไม่ต้อง upload ใหม่)
+        เมื่อกด <b data-i18n="btn.apply">Apply</b> ระบบจะ recompute scoring + uplift ทันที (ไม่ต้อง upload ใหม่)
       </p>
     </div>
 
@@ -623,7 +683,7 @@
 
       <!-- Performance Weights -->
       <div class="card p-4">
-        <h3 class="font-semibold text-slate-900 mb-1">Performance Scoring (0-100)</h3>
+        <h3 class="font-semibold text-slate-900 mb-1" data-i18n="set.perfScoring">Performance Scoring (0-100)</h3>
         <p class="text-xs text-slate-500 mb-3">Outlet ทำสำเร็จแค่ไหน — น้ำหนักรวมต้องเท่ากับ 1.00</p>
         <div class="space-y-2 text-sm">
           <div class="flex items-center justify-between gap-2">
@@ -650,7 +710,7 @@
 
       <!-- Health Weights -->
       <div class="card p-4">
-        <h3 class="font-semibold text-slate-900 mb-1">Health Scoring (0-100)</h3>
+        <h3 class="font-semibold text-slate-900 mb-1" data-i18n="set.healthScoring">Health Scoring (0-100)</h3>
         <p class="text-xs text-slate-500 mb-3">Outlet มีสุขภาพดีไหม — น้ำหนักรวมต้องเท่ากับ 1.00</p>
         <div class="space-y-2 text-sm">
           <div class="flex items-center justify-between gap-2">
@@ -688,43 +748,43 @@
     </div>
 
     <div class="card p-4 mb-3">
-      <h3 class="font-semibold text-slate-900 mb-1">Action Parameters (Elasticity / Sensitivity)</h3>
+      <h3 class="font-semibold text-slate-900 mb-1" data-i18n="set.actionParam">Action Parameters (Elasticity / Sensitivity)</h3>
       <p class="text-xs text-slate-500 mb-3">
         ตัวคูณที่ใช้คำนวณ Uplift Expected — ดูสูตรเต็มใน "Action Logic Reference" ด้านล่าง
       </p>
       <div class="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
         <div>
-          <label class="block text-xs text-slate-500 mb-1">A01 Promote F1→F2 elasticity</label>
+          <label class="block text-xs text-slate-500 mb-1" data-i18n="set.a01el">A01 Promote F1→F2 elasticity</label>
           <input type="number" min="0" max="1" step="0.05" value="0.30"
                  class="w-full px-2 py-1 text-sm border border-slate-200 rounded act-param" data-key="A01_elasticity">
           <div class="text-[10px] text-slate-400 mt-1">Uplift = Sales × (2−1) × this</div>
         </div>
         <div>
-          <label class="block text-xs text-slate-500 mb-1">A02 Demote F2→F1 elasticity</label>
+          <label class="block text-xs text-slate-500 mb-1" data-i18n="set.a02el">A02 Demote F2→F1 elasticity</label>
           <input type="number" min="-1" max="0" step="0.05" value="-0.10"
                  class="w-full px-2 py-1 text-sm border border-slate-200 rounded act-param" data-key="A02_elasticity">
           <div class="text-[10px] text-slate-400 mt-1">Uplift = Sales × this (negative = saving)</div>
         </div>
         <div>
-          <label class="block text-xs text-slate-500 mb-1">A03 PFS Coaching β</label>
+          <label class="block text-xs text-slate-500 mb-1" data-i18n="set.a03b">A03 PFS Coaching β</label>
           <input type="number" min="0" max="1" step="0.05" value="0.20"
                  class="w-full px-2 py-1 text-sm border border-slate-200 rounded act-param" data-key="A03_beta">
           <div class="text-[10px] text-slate-400 mt-1">Uplift = Sales × gap_pct × β</div>
         </div>
         <div>
-          <label class="block text-xs text-slate-500 mb-1">A04 SKU Expansion γ</label>
+          <label class="block text-xs text-slate-500 mb-1" data-i18n="set.a04g">A04 SKU Expansion γ</label>
           <input type="number" min="0" max="1" step="0.05" value="0.40"
                  class="w-full px-2 py-1 text-sm border border-slate-200 rounded act-param" data-key="A04_gamma">
           <div class="text-[10px] text-slate-400 mt-1">Uplift = Sales × gap_pct × γ</div>
         </div>
         <div>
-          <label class="block text-xs text-slate-500 mb-1">A05 Reactivate days_min</label>
+          <label class="block text-xs text-slate-500 mb-1" data-i18n="set.a05min">A05 Reactivate days_min</label>
           <input type="number" min="0" step="5" value="30"
                  class="w-full px-2 py-1 text-sm border border-slate-200 rounded act-param" data-key="A05_days_min">
           <div class="text-[10px] text-slate-400 mt-1">เริ่มเข้าเกณฑ์เมื่อขาดขายเกินกี่วัน</div>
         </div>
         <div>
-          <label class="block text-xs text-slate-500 mb-1">A05 Reactivate days_max</label>
+          <label class="block text-xs text-slate-500 mb-1" data-i18n="set.a05max">A05 Reactivate days_max</label>
           <input type="number" min="0" step="5" value="90"
                  class="w-full px-2 py-1 text-sm border border-slate-200 rounded act-param" data-key="A05_days_max">
           <div class="text-[10px] text-slate-400 mt-1">เกินวันนี้ ถือว่าหายไป — ไม่เข้าเกณฑ์</div>
@@ -733,18 +793,18 @@
     </div>
 
     <div class="card p-4 mb-3">
-      <h3 class="font-semibold text-slate-900 mb-1">Quadrant Cutpoints</h3>
+      <h3 class="font-semibold text-slate-900 mb-1" data-i18n="set.quadCut">Quadrant Cutpoints</h3>
       <p class="text-xs text-slate-500 mb-3">
         เกณฑ์แบ่ง Low / Mid / High ตาม Percentile ภายใน peer group
       </p>
       <div class="grid grid-cols-2 gap-3 text-sm">
         <div>
-          <label class="block text-xs text-slate-500 mb-1">Lower cutoff (Low → Mid)</label>
+          <label class="block text-xs text-slate-500 mb-1" data-i18n="set.lowerCut">Lower cutoff (Low → Mid)</label>
           <input type="number" min="0" max="1" step="0.05" value="0.33"
                  class="w-full px-2 py-1 text-sm border border-slate-200 rounded quad-param" data-key="p_lower">
         </div>
         <div>
-          <label class="block text-xs text-slate-500 mb-1">Upper cutoff (Mid → High)</label>
+          <label class="block text-xs text-slate-500 mb-1" data-i18n="set.upperCut">Upper cutoff (Mid → High)</label>
           <input type="number" min="0" max="1" step="0.05" value="0.67"
                  class="w-full px-2 py-1 text-sm border border-slate-200 rounded quad-param" data-key="p_upper">
         </div>
@@ -752,70 +812,70 @@
     </div>
 
     <div class="flex gap-2 mb-6">
-      <button id="btn-apply-settings" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
+      <button id="btn-apply-settings" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700" data-i18n="btn.applyRecompute">
         Apply &amp; Recompute
       </button>
-      <button id="btn-reset-settings" class="px-4 py-2 border border-slate-200 text-sm rounded-lg hover:bg-white">
+      <button id="btn-reset-settings" class="px-4 py-2 border border-slate-200 text-sm rounded-lg hover:bg-white" data-i18n="btn.resetDefault">
         Reset to Defaults
       </button>
     </div>
 
     <!-- Action Logic Reference -->
     <div class="card p-4">
-      <h3 class="font-semibold text-slate-900 mb-3">Action Logic Reference</h3>
+      <h3 class="font-semibold text-slate-900 mb-3" data-i18n="h.actionRef">Action Logic Reference</h3>
       <div class="overflow-x-auto">
         <table class="data-table w-full text-xs">
           <thead class="bg-slate-50 border-b border-slate-200">
             <tr>
-              <th class="text-left px-2 py-2">Code</th>
-              <th class="text-left px-2 py-2">Name</th>
+              <th class="text-left px-2 py-2" data-i18n="col.code">Code</th>
+              <th class="text-left px-2 py-2" data-i18n="col.name">Name</th>
               <th class="text-left px-2 py-2">Eligibility (ต้องผ่านทุกข้อ)</th>
-              <th class="text-left px-2 py-2">Uplift Formula</th>
-              <th class="text-left px-2 py-2">Confidence</th>
+              <th class="text-left px-2 py-2" data-i18n="col.upliftFormula">Uplift Formula</th>
+              <th class="text-left px-2 py-2" data-i18n="col.confidence">Confidence</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 align-top">
             <tr>
               <td class="px-2 py-2 font-mono">A02</td>
-              <td class="px-2 py-2">Demote F2→F1</td>
+              <td class="px-2 py-2" data-i18n="aref.a02">Demote F2→F1</td>
               <td class="px-2 py-2">F=F2 · Compliance≥0.8 · Drop<½peer · Drop>0</td>
               <td class="px-2 py-2 font-mono">Sales × −0.10</td>
-              <td class="px-2 py-2"><span class="badge b-green">High</span></td>
+              <td class="px-2 py-2"><span class="badge b-green" data-i18n="conf.high">High</span></td>
             </tr>
             <tr>
               <td class="px-2 py-2 font-mono">A05</td>
-              <td class="px-2 py-2">Reactivate</td>
+              <td class="px-2 py-2" data-i18n="aref.a05">Reactivate</td>
               <td class="px-2 py-2">Active=0 · 30≤days_since_sales≤90</td>
               <td class="px-2 py-2 font-mono">Peer median Value/Outlet</td>
-              <td class="px-2 py-2"><span class="badge b-slate">Low</span></td>
+              <td class="px-2 py-2"><span class="badge b-slate" data-i18n="conf.low">Low</span></td>
             </tr>
             <tr>
               <td class="px-2 py-2 font-mono">A01</td>
-              <td class="px-2 py-2">Promote F1→F2</td>
+              <td class="px-2 py-2" data-i18n="aref.a01">Promote F1→F2</td>
               <td class="px-2 py-2">F=F1 · Extra calls≥1 · Strike≥0.30</td>
               <td class="px-2 py-2 font-mono">Sales × 1.0 × 0.30</td>
-              <td class="px-2 py-2"><span class="badge b-amber">Medium</span></td>
+              <td class="px-2 py-2"><span class="badge b-amber" data-i18n="conf.medium">Medium</span></td>
             </tr>
             <tr>
               <td class="px-2 py-2 font-mono">A06</td>
-              <td class="px-2 py-2">Strike Rate Recovery</td>
+              <td class="px-2 py-2" data-i18n="aref.a06">Strike Rate Recovery</td>
               <td class="px-2 py-2">Visits≥2 · Strike < peer median</td>
               <td class="px-2 py-2 font-mono">VisitCount × Gap × DropSize</td>
-              <td class="px-2 py-2"><span class="badge b-amber">Medium</span></td>
+              <td class="px-2 py-2"><span class="badge b-amber" data-i18n="conf.medium">Medium</span></td>
             </tr>
             <tr>
               <td class="px-2 py-2 font-mono">A03</td>
-              <td class="px-2 py-2">PFS Coaching</td>
+              <td class="px-2 py-2" data-i18n="aref.a03">PFS Coaching</td>
               <td class="px-2 py-2">Active=1 · PFS < peer median</td>
               <td class="px-2 py-2 font-mono">Sales × (peer−PFS)/PFS × 0.20</td>
-              <td class="px-2 py-2"><span class="badge b-amber">Medium</span></td>
+              <td class="px-2 py-2"><span class="badge b-amber" data-i18n="conf.medium">Medium</span></td>
             </tr>
             <tr>
               <td class="px-2 py-2 font-mono">A04</td>
-              <td class="px-2 py-2">SKU Expansion</td>
+              <td class="px-2 py-2" data-i18n="aref.a04">SKU Expansion</td>
               <td class="px-2 py-2">Active=1 · SKU < peer median</td>
               <td class="px-2 py-2 font-mono">Sales × (peer−SKU)/SKU × 0.40</td>
-              <td class="px-2 py-2"><span class="badge b-slate">Low</span></td>
+              <td class="px-2 py-2"><span class="badge b-slate" data-i18n="conf.low">Low</span></td>
             </tr>
           </tbody>
         </table>
@@ -829,7 +889,7 @@
   </section>
   <section id="tab-trend" class="tab-panel hidden">
     <div class="card p-4 mb-4 flex items-center gap-3">
-      <span class="text-xs text-slate-500">Roll-up level:</span>
+      <span class="text-xs text-slate-500" data-i18n="diag.rollup">Roll-up level:</span>
       <select id="trend-level" class="px-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white">
         <option value="dc">DC</option>
         <option value="channel">Channel × DC</option>
@@ -864,6 +924,284 @@
 // All logic ports the Python pipeline (verified against
 // reference dashboard) to vanilla JS. No build step.
 
+// ════════════════════════════════════════════════════════════════════
+// F2 I18N — TH/EN dictionary + helpers (default = Thai)
+// ════════════════════════════════════════════════════════════════════
+// Two layers:
+//   Layer 1 (I18N): UI labels — tags via data-i18n, swapped on setLang
+//   Layer 2 (VALUE_I18N): data values rendered dynamically (quadrant labels,
+//                         action codes) — translated at render time via tVal()
+// Data layer (Excel/JSON) keeps English codes — translation is display-only.
+// Edit any phrase below without touching code logic.
+
+const I18N = {
+  // Header + global
+  'app.title':         { th: 'วิเคราะห์ยอดขาย',                                 en: 'Sales Analytics' },
+  'app.subtitle':      { th: 'ผลงาน FMCG DC — จัดอันดับร้าน + แผนปฏิบัติ',  en: 'FMCG DC Performance — Outlet scoring & action planning' },
+  'storage.empty':     { th: 'ยังไม่มีข้อมูล',                                en: 'No data loaded' },
+  'btn.exportExcel':   { th: 'ออกไฟล์ Excel',                                en: 'Export Excel' },
+  'btn.exportCSV':     { th: 'ออกไฟล์ CSV',                                  en: 'Export CSV' },
+  // Tabs
+  'tab.upload':        { th: '📤 อัปโหลด',     en: '📤 Upload' },
+  'tab.overview':      { th: '📊 ภาพรวม',     en: '📊 Overview' },
+  'tab.outlets':       { th: '🏪 ร้านค้า',     en: '🏪 Outlets' },
+  'tab.actions':       { th: '🎯 สิ่งที่ต้องทำ', en: '🎯 Actions' },
+  'tab.diagnostics':   { th: '🔬 วินิจฉัย',     en: '🔬 Diagnostics' },
+  'tab.trend':         { th: '📈 แนวโน้ม',     en: '📈 Trend' },
+  'tab.settings':      { th: '⚙️ ตั้งค่า',      en: '⚙️ Settings' },
+  // KPI cards (Overview)
+  'kpi.sales':         { th: 'ยอดขาย',            en: 'Sales' },
+  'kpi.active':        { th: 'ร้านที่ขายได้',      en: 'Active Outlets' },
+  'kpi.coverage':      { th: 'ร้านในแผน',          en: 'Coverage (Plan)' },
+  'kpi.bills':         { th: 'บิลต่อร้านที่ขายได้',  en: 'Bills per ASO' },
+  'kpi.drop':          { th: 'ขนาดบิลเฉลี่ย',      en: 'Drop Size' },
+  'kpi.strike':        { th: 'อัตราปิดการขาย',     en: 'Strike Rate' },
+  'kpi.sku':           { th: 'SKU ต่อร้าน',        en: 'SKU / Outlet' },
+  'kpi.visit':         { th: 'จำนวนเยี่ยม',         en: 'Visit Call' },
+  'kpi.compliance':    { th: 'เยี่ยมตรงแผน',       en: 'Visit Compliance' },
+  'kpi.pfs':           { th: 'คะแนน PFS',          en: 'PFS Score' },
+  'kpi.aeo':           { th: 'AEO Coverage',      en: 'AEO Coverage' },
+  'kpi.uplift':        { th: 'โอกาสเพิ่มยอด',      en: 'Uplift Pipeline' },
+  // Filter labels
+  'filter.label':      { th: 'กรอง',              en: 'FILTER' },
+  'filter.allDcs':     { th: 'ทุก DC',           en: 'All DCs' },
+  'filter.allChannels':{ th: 'ทุกช่องทาง',       en: 'All Channels' },
+  'filter.allSalesmen':{ th: 'ทุกเซลล์',          en: 'All Salesmen' },
+  'filter.latestMonth':{ th: 'เดือนล่าสุด',       en: 'Latest Month' },
+  'filter.reset':      { th: 'ล้าง',              en: 'Reset' },
+  'filter.month':      { th: 'เดือน',             en: 'Month' },
+  'filter.dc':         { th: 'DC',                en: 'DC' },
+  'filter.channel':    { th: 'ช่องทาง',           en: 'Channel' },
+  'filter.salesman':   { th: 'พนักงานขาย',        en: 'Salesman' },
+  // Common widget headings
+  'h.guardrail':       { th: 'ตัวคุม (Guardrail)', en: 'Guardrail' },
+  'h.elasticity':      { th: 'ความยืดหยุ่น',       en: 'Elasticity' },
+  'h.bridge':          { th: 'Bridge — ที่มาของ %ΔSales', en: 'Bridge — %ΔSales decomposition' },
+  'h.b3':              { th: 'B3 — เทียบกับ Top Quartile', en: 'B3 — vs Top Quartile' },
+  'h.asoGate':         { th: '%ASO Gate — จัด F2', en: '%ASO Gate — F2 routing' },
+  // Outlet table headers
+  'col.shopCode':      { th: 'รหัสร้าน',          en: 'Shop Code' },
+  'col.shopName':      { th: 'ชื่อร้าน',           en: 'Shop Name' },
+  'col.salesman':      { th: 'พนักงาน',           en: 'Salesman' },
+  'col.sales':         { th: 'ยอดขาย',            en: 'Sales' },
+  'col.active':        { th: 'ขายได้',            en: 'Active' },
+  'col.drop':          { th: 'Drop',              en: 'Drop' },
+  'col.sku':           { th: 'SKU',               en: 'SKU' },
+  'col.visitSuccess':  { th: 'เข้าได้',           en: 'Visit Success' },
+  'col.hero':          { th: 'Hero %',            en: 'Hero %' },
+  'col.heroGap':       { th: 'Hero ที่ขาด',      en: 'Hero Gap' },
+  'col.pfs':           { th: 'PFS',               en: 'PFS' },
+  'col.fLevel':        { th: 'F',                 en: 'F' },
+  'col.days':          { th: 'วัน',                en: 'Days' },
+  'col.perf':          { th: 'ผลงาน',             en: 'Perf' },
+  'col.health':        { th: 'สุขภาพ',            en: 'Health' },
+  'col.action':        { th: 'สิ่งที่ต้องทำ',      en: 'Action' },
+  'col.uplift':        { th: 'อัปลิฟต์',           en: 'Uplift' },
+  'col.upliftThb':     { th: 'อัปลิฟต์ (บาท)',     en: 'Uplift (THB)' },
+  'col.confidence':    { th: 'ความมั่นใจ',         en: 'Confidence' },
+  'col.severity':      { th: 'ความรุนแรง',         en: 'Severity' },
+  'col.quadrant':      { th: 'โซน',                en: 'Quadrant' },
+  // Action tab
+  'actions.summary':   { th: 'สรุปสิ่งที่ต้องทำ', en: 'Action Summary' },
+  'actions.topUplift': { th: '10 ร้าน อัปลิฟต์สูงสุด', en: 'Top 10 Highest Uplift Outlets' },
+  'actions.plan':      { th: 'รายละเอียดแผนปฏิบัติ', en: 'Action Plan Details' },
+  'actions.confidence':{ th: 'ความมั่นใจ',          en: 'confidence' },
+  'actions.outlets':   { th: 'ร้าน',                en: 'outlets' },
+  // Upload tab
+  'upload.title':      { th: 'อัปโหลดข้อมูล 1 DC',  en: 'Upload data for 1 DC' },
+  'upload.hint':       { th: 'ลากไฟล์มาวาง หรือคลิกเลือกไฟล์', en: 'Drag & drop or click to browse' },
+  'upload.browse':     { th: 'เลือกไฟล์',            en: 'Browse files' },
+  'upload.demo':       { th: '🎬 ลองข้อมูลตัวอย่าง (DC 302)',  en: '🎬 Load Demo (DC 302)' },
+  'upload.accept':     { th: 'รับไฟล์ Sellout / HH Transaction / ScoreAch / AEO รวมกันได้ (อย่างน้อยอย่างละ 1) · หลายเดือนก็ได้', en: 'Accept any mix of Sellout / HH Transaction / ScoreAch / AEO files (1 or more of each). Multi-month files welcome.' },
+  'upload.staged':     { th: 'ไฟล์ที่เตรียมไว้',     en: 'Staged files' },
+  'upload.clear':      { th: 'ล้าง',                en: 'Clear' },
+  'upload.process':    { th: 'ประมวลผล DC นี้ →',    en: 'Process this DC →' },
+  'upload.processing': { th: 'กำลังประมวลผล...',    en: 'Processing data...' },
+  'upload.init':       { th: 'กำลังเริ่ม',          en: 'Initializing' },
+  // Additional keys for full coverage
+  'app.titleSub':      { th: 'วิเคราะห์ยอดขาย — ผลงาน DC',  en: 'Sales Analytics — DC Performance' },
+  'storage.loaded':    { th: 'DC ที่โหลดแล้ว',     en: 'Loaded DCs' },
+  'storage.noDcs':     { th: 'ยังไม่มี DC — อัปโหลดเพื่อเริ่ม', en: 'No DCs loaded yet — upload to get started' },
+  'btn.prev':          { th: 'ก่อนหน้า',           en: 'Prev' },
+  'btn.next':          { th: 'ถัดไป',              en: 'Next' },
+  'btn.apply':         { th: 'ใช้',                en: 'Apply' },
+  'btn.applyRecompute':{ th: 'ใช้ & คำนวณใหม่',    en: 'Apply & Recompute' },
+  'btn.resetDefault':  { th: 'รีเซ็ตค่าเริ่มต้น',  en: 'Reset to Defaults' },
+  'kpi.billsTotal':    { th: 'จำนวนบิลรวม',        en: 'Bills (Invoices, total)' },
+  'kpi.visitSucc':     { th: 'อัตราเยี่ยมสำเร็จ',  en: 'Visit Success Rate (visit-level)' },
+  'kpi.extra':         { th: '%เข้าเสริม',         en: '%Extra Call' },
+  'h.trend12':         { th: 'แนวโน้ม 12 เดือน',   en: '12-Month Trend' },
+  'h.outletDist':      { th: 'การกระจายร้าน',     en: 'Outlet Distribution' },
+  'h.salesByChannel':  { th: 'ยอดตามช่องทาง',    en: 'Sales by Channel' },
+  'h.outletQuad':      { th: 'กลุ่มร้าน (เฉพาะร้านที่ขายได้)', en: 'Outlet Quadrant (Active only)' },
+  'h.lifecycle':       { th: 'วงจรชีวิตร้าน',      en: 'Outlet Lifecycle' },
+  'h.lifecycleSub':    { th: 'แบ่งตามวันที่ตั้งแต่ขายครั้งล่าสุด', en: 'By days since last NET-positive sale' },
+  'h.actionRank':      { th: 'ลำดับงาน & อันดับ',  en: 'Action Priorities & Rankings' },
+  'h.actionPriority':  { th: 'ลำดับงาน (โอกาส)',   en: 'Action Priority (Uplift)' },
+  'h.topSalesman':     { th: 'เซลล์ยอดเยี่ยม (ยอดขาย)', en: 'Top Salesman (Sales)' },
+  'h.topUplift':       { th: 'ร้านโอกาสสูงสุด',    en: 'Top Uplift Outlets' },
+  'h.sortBy':          { th: 'ตัวกรองปัจจุบัน. จัดเรียงตาม:', en: 'Current filter applies. Sort by:' },
+  'h.actionRef':       { th: 'ตารางอ้างอิงสิ่งที่ต้องทำ', en: 'Action Logic Reference' },
+  'h.bridge':          { th: 'Bridge — ที่มาของยอดเปลี่ยน', en: 'Bridge — %ΔSales decomposition' },
+  'h.b3':              { th: 'B3 — เทียบกับ Top Quartile', en: 'B3 — vs Top Quartile' },
+  'h.asoGate':         { th: '%ASO Gate — จัด F2', en: '%ASO Gate — F2 routing' },
+  'h.elasticity':      { th: 'ความยืดหยุ่น',       en: 'Elasticity' },
+  'diag.rollup':       { th: 'ระดับ Roll-up:',     en: 'Roll-up level:' },
+  'diag.salesman':     { th: 'เซลล์ (Route)',      en: 'Salesman (Route)' },
+  'diag.outlet':       { th: 'ร้าน',                en: 'Outlet' },
+  'diag.bridgeMoM':    { th: 'Bridge — เทียบเดือนก่อน', en: 'Bridge Analysis — MoM' },
+  'diag.b3':           { th: 'B3 — เทียบ Top Q (P75)', en: 'B3 Comparison — vs Top Q (P75)' },
+  'diag.asoRouting':   { th: '%ASO Gate — จัด F2', en: '%ASO Gate — F2 routing' },
+  'diag.aKeep':        { th: 'A คง',               en: 'A Keep' },
+  'diag.bBack':        { th: 'B ถอยกลับ F1',       en: 'B Back to F1' },
+  'diag.cReview':      { th: 'C ทบทวน',            en: 'C Review' },
+  'sort.uplift':       { th: 'โอกาส (มาก → น้อย)', en: 'Uplift (high → low)' },
+  'sort.sales':        { th: 'ยอดขาย (มาก → น้อย)', en: 'Sales (high → low)' },
+  'sort.days':         { th: 'วันที่หาย (มาก → น้อย)', en: 'Days Since Sale (high → low)' },
+  'sort.perf':         { th: 'คะแนนผลงาน (น้อย → มาก)', en: 'Performance Score (low → high)' },
+  'sort.health':       { th: 'คะแนนสุขภาพ (น้อย → มาก)', en: 'Health Score (low → high)' },
+  'set.perfScoring':   { th: 'คะแนนผลงาน (0-100)', en: 'Performance Scoring (0-100)' },
+  'set.healthScoring': { th: 'คะแนนสุขภาพ (0-100)', en: 'Health Scoring (0-100)' },
+  'set.actionParam':   { th: 'พารามิเตอร์งาน',    en: 'Action Parameters (Elasticity / Sensitivity)' },
+  'set.quadCut':       { th: 'จุดตัด Quadrant',    en: 'Quadrant Cutpoints' },
+  'set.lowerCut':      { th: 'จุดตัดล่าง (Low → Mid)', en: 'Lower cutoff (Low → Mid)' },
+  'set.upperCut':      { th: 'จุดตัดบน (Mid → High)', en: 'Upper cutoff (Mid → High)' },
+  'set.sum':           { th: 'รวม:',               en: 'Sum:' },
+  'col.code':          { th: 'รหัส',               en: 'Code' },
+  'col.name':          { th: 'ชื่อ',                en: 'Name' },
+  'col.upliftFormula': { th: 'สูตรอัปลิฟต์',       en: 'Uplift Formula' },
+  'actions.noActions': { th: 'ยังไม่มีงานในขอบเขตปัจจุบัน', en: 'No actions in current scope' },
+  'actions.noOutlets': { th: 'ไม่มีร้าน',          en: 'No outlets' },
+  // RS Route Optimize (Watchlist)
+  'ro.heading':        { th: 'RS Route Optimize — ร้านที่ต้องจัดการ', en: 'RS Route Optimize — Outlets to Act On' },
+  'ro.sub':            { th: 'ร้านที่ตก LowP_LowH — ระบบวินิจฉัยว่าตกเพราะ route (แก้ได้) หรือเพราะร้านเอง (ลด/ตัด) · ดูหลักฐานข้าง status แล้วลงมือได้เลย', en: 'Outlets in LowP_LowH — diagnosed as route-fixable vs shop-driven (reduce/cut). Evidence shown beside each status.' },
+  'ro.totalLabel':     { th: 'ร้านต้องจัดการ',      en: 'Outlets to act on' },
+  'ro.loseLabel':      { th: 'ยอดที่จะเสีย (ตัด/ลด)', en: 'Sales at risk (cut/reduce)' },
+  'ro.all':            { th: 'ทุกสถานะ',            en: 'All situations' },
+  'ro.colSituation':   { th: 'สถานะ',              en: 'Situation' },
+  'ro.colSignal':      { th: 'สัญญาณ',             en: 'Signal' },
+  'ro.colEvidence':    { th: 'สรุปรายละเอียด',     en: 'Detail' },
+  'ro.colLose':        { th: 'ยอดที่จะเสีย',        en: 'Sales at risk' },
+  'ro.empty':          { th: 'ไม่มีร้านต้องจัดการ',  en: 'No outlets to act on' },
+  'diag.noPrevMonth':  { th: 'ไม่มีเดือนก่อนหน้าให้เทียบ', en: 'No previous month for bridge.' },
+  // Lifecycle buckets
+  'lc.active':         { th: 'ขายได้',                       en: 'Active' },
+  'lc.activeDesc':     { th: 'ขายได้ในเดือนนี้',              en: 'Bought this month' },
+  'lc.justInactive':   { th: 'เพิ่งไม่ขาย',                  en: 'Just Inactive' },
+  'lc.justInactiveDesc':{ th: '< 30 วันตั้งแต่ขายล่าสุด',     en: '< 30 days since sale' },
+  'lc.dormant':        { th: 'หลับ',                          en: 'Dormant' },
+  'lc.dormantDesc':    { th: '30-89 วัน · A05 ⭐',           en: '30-89 days · A05 ⭐' },
+  'lc.longDormant':    { th: 'หลับนาน',                       en: 'Long Dormant' },
+  'lc.longDormantDesc':{ th: '90-179 วัน',                   en: '90-179 days' },
+  'lc.lost':           { th: 'สูญหาย / ปิด?',                 en: 'Lost / Closed?' },
+  'lc.lostDesc':       { th: '180+ วัน',                     en: '180+ days' },
+  // Settings tab — Action parameters
+  'set.a01el':         { th: 'A01 ดัน F2 — ความยืดหยุ่น',     en: 'A01 Promote F1→F2 elasticity' },
+  'set.a02el':         { th: 'A02 ถอย F1 — ความยืดหยุ่น',     en: 'A02 Demote F2→F1 elasticity' },
+  'set.a03b':          { th: 'A03 โค้ช PFS — β',              en: 'A03 PFS Coaching β' },
+  'set.a04g':          { th: 'A04 เพิ่ม SKU — γ',             en: 'A04 SKU Expansion γ' },
+  'set.a05min':        { th: 'A05 ปลุกร้าน — วันต่ำสุด',       en: 'A05 Reactivate days_min' },
+  'set.a05max':        { th: 'A05 ปลุกร้าน — วันสูงสุด',       en: 'A05 Reactivate days_max' },
+  // Action Logic Reference table cells
+  'aref.a01':          { th: 'ดัน F2',                          en: 'Promote F1→F2' },
+  'aref.a02':          { th: 'ถอย F1',                          en: 'Demote F2→F1' },
+  'aref.a03':          { th: 'โค้ช PFS',                        en: 'PFS Coaching' },
+  'aref.a04':          { th: 'เพิ่ม SKU',                       en: 'SKU Expansion' },
+  'aref.a05':          { th: 'ปลุกร้าน',                        en: 'Reactivate' },
+  'aref.a06':          { th: 'กู้การปิดการขาย',                  en: 'Strike Rate Recovery' },
+  // Confidence (static reference table)
+  'conf.high':         { th: 'สูง',                             en: 'High' },
+  'conf.medium':       { th: 'กลาง',                            en: 'Medium' },
+  'conf.low':          { th: 'ต่ำ',                             en: 'Low' },
+};
+
+// Data-value translation table (quadrant labels, action codes, channel, severity)
+// Data is stored as English codes — translation applies only at render time.
+const VALUE_I18N = {
+  quadrant: {
+    'HighP_HighH': { th: 'ดาว–แข็งแรง',          en: 'Star–Healthy' },
+    'HighP_MidH':  { th: 'ดาว–ปานกลาง',          en: 'Star–Mid' },
+    'MidP_HighH':  { th: 'ดี–แข็งแรง',            en: 'Good–Healthy' },
+    'HighP_LowH':  { th: 'ศักยภาพสูง–อ่อนแรง',   en: 'High-Potential–Weak' },
+    'MidP_LowH':   { th: 'ปานกลาง–อ่อนแรง',      en: 'Mid–Weak' },
+    'MidP_MidH':   { th: 'กลางๆ',                en: 'Average' },
+    'LowP_HighH':  { th: 'เล็ก–สม่ำเสมอ',        en: 'Small–Steady' },
+    'LowP_MidH':   { th: 'เล็ก–ปานกลาง',        en: 'Small–Mid' },
+    'LowP_LowH':   { th: 'เล็ก–เกือบไม่ขาย',     en: 'Small–Inactive' },
+  },
+  action: {
+    'A00_no_action':            { th: 'ไม่ต้องทำ',          en: 'No action' },
+    'A01_promote_f1_to_f2':     { th: 'ดัน F2',              en: 'Promote to F2' },
+    'A02_demote_f2_to_f1':      { th: 'ถอย F1',              en: 'Demote to F1' },
+    'A03_pfs_coaching':         { th: 'โค้ช PFS',            en: 'PFS Coaching' },
+    'A04_sku_expansion':        { th: 'เพิ่ม SKU',           en: 'SKU Expansion' },
+    'A05_reactivate':           { th: 'ปลุกร้าน',            en: 'Reactivate' },
+    'A06_strike_rate_recovery': { th: 'กู้การปิดการขาย',     en: 'Strike Recovery' },
+    'A99_pending_model':        { th: 'รอโมเดล',             en: 'Pending model' },
+  },
+  channel: {
+    'Presales':   { th: 'พรีเซลล์',  en: 'Presales' },
+    'VanSales':   { th: 'แวนเซลล์',  en: 'VanSales' },
+    'Credit':     { th: 'เครดิต',    en: 'Credit' },
+    'CreditSales':{ th: 'เครดิต',    en: 'Credit' },
+    'Other':      { th: 'อื่นๆ',      en: 'Other' },
+  },
+  confidence: {
+    'High':   { th: 'สูง',   en: 'High' },
+    'Medium': { th: 'กลาง',  en: 'Medium' },
+    'Low':    { th: 'ต่ำ',   en: 'Low' },
+    'N/A':    { th: 'N/A',   en: 'N/A' },
+  },
+};
+
+// Translate a UI label key. Falls back to en value, then key itself.
+function t(key) {
+  const e = I18N[key];
+  if (!e) return key;
+  return e[APP.lang] || e.en || key;
+}
+
+// Translate a data value (quadrant code, action code). Falls back to code itself.
+function tVal(category, code) {
+  if (code == null) return '';
+  const m = VALUE_I18N[category] && VALUE_I18N[category][code];
+  if (!m) return code;
+  return m[APP.lang] || m.en || code;
+}
+
+// Apply current APP.lang to all UI elements + restyle toggle buttons + re-render.
+function setLang(lang) {
+  if (lang !== 'th' && lang !== 'en') return;
+  APP.lang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    const txt = t(key);
+    if (txt !== key) el.textContent = txt;
+  });
+  // Restyle toggle buttons
+  const thBtn = document.getElementById('lang-th');
+  const enBtn = document.getElementById('lang-en');
+  if (thBtn && enBtn) {
+    const onCls = ['bg-slate-900', 'text-white'];
+    const offCls = ['bg-white', 'text-slate-700'];
+    const apply = (el, on) => {
+      onCls.forEach(c => el.classList.toggle(c, on));
+      offCls.forEach(c => el.classList.toggle(c, !on));
+    };
+    apply(thBtn, lang === 'th');
+    apply(enBtn, lang === 'en');
+  }
+  // Re-render dashboard so dynamic values (action labels, quadrant labels) update too.
+  // Also refresh filter dropdowns so channel options re-translate.
+  if (Object.keys(APP.data || {}).length > 0) {
+    try {
+      if (typeof refreshFilters === 'function') refreshFilters();
+      else if (typeof renderDashboard === 'function') renderDashboard();
+    } catch (e) { console.warn('[i18n] re-render failed:', e); }
+  }
+}
+
+
 const APP = {
   // In-memory store of loaded DC datasets
   // { dc_code: { rows: [...fact_outlet_monthly...], months: [...], processed_at, n_outlets } }
@@ -877,6 +1215,8 @@ const APP = {
   outletPageSize: 50,
   // Staged files awaiting processing
   staged: [],
+  // F2 i18n — UI language (Thai default per spec)
+  lang: 'th',
 };
 
 // ============================================================
@@ -939,7 +1279,10 @@ const HERO_REQ_BY_SHOP_TYPE = {
 };
 
 const CONFIG = {
-  channel_map: { 'PreSales': 'Presales', 'CreditSales': 'Credit' },
+  channel_map: { 'PreSales': 'Presales', 'VanSales': 'VanSales', 'CreditSales': 'Credit' },
+  // F2 Core Equation scope: channels that have Beat Plan + On-Plan + Successful Visit flags
+  // (verified raw data: Presales, VanSales). CreditSales excluded (no Beat Plan → Coverage undefined).
+  core_eq_channels: ['Presales', 'VanSales'],
   time_compliance: { tc2_start: 8, tc2_end: 17, tc3_min_min: 5 },
   active_def: { exclude_status: ['Credit Note'] },
   baseline: { self_trailing: 3, top_q: 0.75 },
@@ -1090,6 +1433,7 @@ function classifyFile(file) {
   if (n.includes('sellout')) return 'sellout';
   if (n.includes('hh_transaction') || n.includes('hh transaction')) return 'hh';
   if (n.includes('scoreach')) return 'pfs';
+  if (n.includes('aeo')) return 'aeo';
   return 'unknown';
 }
 
@@ -1098,9 +1442,40 @@ async function readWorkbook(file) {
   return XLSX.read(buf, { type: 'array', cellDates: false });
 }
 
-function sheetToJson(wb) {
-  const sheet = wb.Sheets[wb.SheetNames[0]];
+function sheetToJson(wb, sheetName) {
+  const name = sheetName || wb.SheetNames[0];
+  const sheet = wb.Sheets[name];
   return XLSX.utils.sheet_to_json(sheet, { defval: null });
+}
+
+// F2: Pick the raw Sellout sheet from a workbook with multiple sheets.
+// Some files mix a summary tab + the raw data — raw is identified by having
+// at least 2 of {Salesman Code, SO Number, Invoice Net Amount} columns.
+// Fallback chain: column-signature match → sheet name starts with "Sellout" → first sheet.
+function pickRawSellowSheet(wb) {
+  const required = ['Salesman Code', 'SO Number', 'Invoice Net Amount'];
+  for (const name of wb.SheetNames) {
+    const sheet = wb.Sheets[name];
+    if (!sheet || !sheet['!ref']) continue;
+    const range = XLSX.utils.decode_range(sheet['!ref']);
+    const headers = new Set();
+    for (let c = range.s.c; c <= range.e.c; c++) {
+      const cell = sheet[XLSX.utils.encode_cell({ r: range.s.r, c })];
+      if (cell && cell.v != null) headers.add(String(cell.v).trim());
+    }
+    const matches = required.filter(k => headers.has(k)).length;
+    if (matches >= 2) return name;
+  }
+  for (const name of wb.SheetNames) {
+    if (/^sellout/i.test(name)) return name;
+  }
+  return wb.SheetNames[0];
+}
+
+// F2: Core Equation channel check (Presales + VanSales).
+// CreditSales + Other → false (N/A treatment).
+function isCoreEqChannel(ch) {
+  return ch === 'Presales' || ch === 'VanSales';
 }
 
 // ============================================================
@@ -1173,6 +1548,25 @@ function normPFS(rows) {
       audit_month: auditMonth,
     };
   }).filter(r => r.customer_code && r.audit_month);
+}
+
+// AEO coverage: per shop × month (0/1). Two rows per shop-month = 2 visit
+// rounds; keep the LAST (latest round).
+function normAEO(rows) {
+  const byKey = new Map();   // `${shop}|${month}` → AEO (last wins)
+  for (const r of rows) {
+    const shop = String(r['ShopID'] ?? '');
+    const month = String(r['YearMonth'] ?? '');
+    if (!shop || !month) continue;
+    const aeo = Number(r['AEO']);
+    byKey.set(`${shop}|${month}`, isNaN(aeo) ? null : aeo);
+  }
+  const out = [];
+  for (const [k, v] of byKey) {
+    const [customer_code, kpi_month] = k.split('|');
+    out.push({ customer_code, kpi_month, aeo: v });
+  }
+  return out;
 }
 
 // ============================================================
@@ -1454,7 +1848,7 @@ async function buildOutletMonthly(sellout, hh, pfs, progressFn) {
 
   for (const r of fact) {
     // F2 issue 3: Core Eq metrics only valid for Presales — Hero is similarly Presales-only
-    if (r.channel !== 'Presales') {
+    if (!isCoreEqChannel(r.channel)) {
       r.hero_compliance = null;
       r.hero_gap_list = null;
       heroSkipped++;
@@ -1684,7 +2078,7 @@ async function buildOutletMonthly(sellout, hh, pfs, progressFn) {
     // produces inflated uplift (e.g. Credit Mar-26: ฿3M uplift on ฿6.4M sales).
     // Hold those channels out until a dedicated Credit model is designed.
     // Placeholder, NOT permanent dropout — flag preserved so future model can flip them on.
-    if (r.channel && r.channel !== 'Presales') {
+    if (r.channel && !isCoreEqChannel(r.channel)) {
       r.primary_action = 'A99_pending_model';
       r.action_reason = 'Credit model pending';
       r.expected_uplift_thb = null;       // N/A — distinguishable from 0
@@ -1828,8 +2222,8 @@ function renderStagedFiles() {
   const list = document.getElementById('staged-list');
   if (APP.staged.length === 0) { wrap.classList.add('hidden'); return; }
   wrap.classList.remove('hidden');
-  const typeLabel = { sellout: 'Sellout', hh: 'HH Visit', pfs: 'PFS Audit', unknown: '❓ Unknown' };
-  const typeBadge = { sellout: 'b-blue', hh: 'b-amber', pfs: 'b-green', unknown: 'b-rose' };
+  const typeLabel = { sellout: 'Sellout', hh: 'HH Visit', pfs: 'PFS Audit', aeo: 'AEO', unknown: '❓ Unknown' };
+  const typeBadge = { sellout: 'b-blue', hh: 'b-amber', pfs: 'b-green', aeo: 'b-emerald', unknown: 'b-rose' };
   list.innerHTML = APP.staged.map((f, i) => `
     <div class="flex items-center justify-between py-1.5 px-2 hover:bg-slate-50 rounded">
       <div class="flex items-center gap-3">
@@ -1855,9 +2249,17 @@ async function processStagedFiles() {
   const nSell = types.filter(t => t === 'sellout').length;
   const nHH = types.filter(t => t === 'hh').length;
   const nPFS = types.filter(t => t === 'pfs').length;
+  const nAEO = types.filter(t => t === 'aeo').length;
+
+  // ── AEO-only mode: merge AEO into existing data without rebuilding ──
+  if (nSell === 0 && nHH === 0 && nPFS === 0 && nAEO > 0) {
+    await processAeoOnly();
+    return;
+  }
+
   if (nSell === 0 && nHH === 0 && nPFS === 0) {
     Swal.fire({ icon: 'error', title: 'No usable files',
-      text: 'Could not recognize any file as Sellout/HH/PFS. Check filenames contain those keywords.' });
+      text: 'Could not recognize any file as Sellout/HH/PFS/AEO. Check filenames contain those keywords.' });
     return;
   }
   // If a key source is missing, just inform (don't block)
@@ -1885,22 +2287,25 @@ async function processStagedFiles() {
   try {
     // Read all files
     setProgress('Reading files...', 5);
-    const allSellout = [], allHH = [], allPFS = [];
+    const allSellout = [], allHH = [], allPFS = [], allAEO = [];
     let i = 0;
     for (const sf of APP.staged) {
       i++;
       setProgress(`Reading ${sf.name}...`, 5 + (i / APP.staged.length) * 20);
       await sleep(10);
       const wb = await readWorkbook(sf.file);
-      const rows = sheetToJson(wb);
-      // F2 fix: `arr.push(...largeArr)` passes elements as function args — JS engine
-      // caps at ~65k → "Maximum call stack size exceeded" on 145k+ Sellout. Loop instead.
+      // F2: Sellout files may have multi-sheet (summary + raw). Pick raw by column signature.
+      const sheetName = sf.type === 'sellout' ? pickRawSellowSheet(wb)
+                      : sf.type === 'aeo' ? 'AEO' : undefined;
+      const rows = sheetToJson(wb, sheetName);
       let normed;
       if (sf.type === 'sellout')      normed = normSellout(rows);
       else if (sf.type === 'hh')      normed = normHH(rows);
       else if (sf.type === 'pfs')     normed = normPFS(rows);
+      else if (sf.type === 'aeo')     normed = normAEO(rows);
       else continue;
-      const target = sf.type === 'sellout' ? allSellout : sf.type === 'hh' ? allHH : allPFS;
+      const target = sf.type === 'sellout' ? allSellout : sf.type === 'hh' ? allHH
+                   : sf.type === 'pfs' ? allPFS : allAEO;
       for (let k = 0; k < normed.length; k++) target.push(normed[k]);
     }
 
@@ -1967,6 +2372,16 @@ async function processStagedFiles() {
     await sleep(10);
     const fact = await buildOutletMonthly(allSellout, allHH, allPFS, setProgress);
 
+    // Merge AEO coverage into fact rows (by customer_code + kpi_month)
+    if (allAEO.length) {
+      const aeoMap = new Map();
+      for (const a of allAEO) aeoMap.set(`${a.customer_code}|${a.kpi_month}`, a.aeo);
+      for (const r of fact) {
+        const v = aeoMap.get(`${r.customer_code}|${r.kpi_month}`);
+        r.aeo = (v === undefined) ? null : v;
+      }
+    }
+
     // Handle merge (newer wins)
     let finalRows = fact;
     if (existing && existing.rows) {
@@ -2012,17 +2427,72 @@ async function processStagedFiles() {
   }
 }
 
-// ============================================================
+// AEO-only update: merge AEO coverage into existing data without rebuilding.
+// Lets the user upload just the new AEO file(s) instead of re-uploading everything.
+async function processAeoOnly() {
+  document.getElementById('processing').classList.remove('hidden');
+  const setProgress = (msg, pct) => {
+    document.getElementById('processing-step').textContent = msg;
+    document.getElementById('progress-bar').style.width = pct + '%';
+  };
+  try {
+    setProgress('อ่านไฟล์ AEO...', 10);
+    const allAEO = [];
+    for (const sf of APP.staged) {
+      if (sf.type !== 'aeo') continue;
+      const wb = await readWorkbook(sf.file);
+      const rows = sheetToJson(wb, 'AEO');
+      const normed = normAEO(rows);
+      for (const r of normed) allAEO.push(r);
+    }
+    if (allAEO.length === 0) throw new Error('ไม่พบข้อมูลใน sheet "AEO"');
+
+    // group AEO by DC (first 3 digits of ShopID = dc code)
+    const aeoMap = new Map();
+    for (const a of allAEO) aeoMap.set(`${a.customer_code}|${a.kpi_month}`, a.aeo);
+
+    setProgress('รวม AEO เข้าข้อมูลเดิม...', 40);
+    const allDC = await dbAll();
+    if (!allDC || allDC.length === 0) {
+      throw new Error('ยังไม่มีข้อมูลเดิม — กรุณาอัปโหลด Sellout/HH/PFS ก่อนอย่างน้อย 1 ครั้ง');
+    }
+    let matched = 0;
+    for (const store of allDC) {
+      if (!store || !store.rows) continue;
+      for (const r of store.rows) {
+        const v = aeoMap.get(`${r.customer_code}|${r.kpi_month}`);
+        if (v !== undefined) { r.aeo = v; matched++; }
+      }
+      await dbSet(store.dc_code, {
+        rows: store.rows, months: store.months,
+        processed_at: store.processed_at, n_outlets: store.n_outlets,
+      });
+    }
+
+    setProgress('เสร็จ!', 100);
+    await sleep(200);
+    document.getElementById('processing').classList.add('hidden');
+    APP.staged = [];
+    renderStagedFiles();
+    await Swal.fire({ icon: 'success', title: 'อัปเดต AEO สำเร็จ',
+      html: `รวม AEO เข้า <b>${matched.toLocaleString()}</b> แถว<br/>ไม่ต้องอัปโหลดไฟล์อื่นใหม่` });
+    location.reload();
+  } catch (err) {
+    console.error(err);
+    document.getElementById('processing').classList.add('hidden');
+    Swal.fire({ icon: 'error', title: 'อัปเดต AEO ไม่สำเร็จ', text: err.message });
+  }
+}
 // DC LIST RENDERING
 // ============================================================
 async function renderDCList() {
   const all = await dbAll();
   const wrap = document.getElementById('dc-list');
   if (all.length === 0) {
-    wrap.innerHTML = '<div class="card p-4 text-sm text-slate-400 italic">No DCs loaded yet — upload to get started</div>';
+    wrap.innerHTML = '<div class="card p-4 text-sm text-slate-400 italic" data-i18n="storage.noDcs">No DCs loaded yet — upload to get started</div>';
     document.getElementById('btn-export-excel').disabled = true;
     document.getElementById('btn-export-csv').disabled = true;
-    document.getElementById('storage-info').textContent = 'No data loaded';
+    document.getElementById('storage-info').textContent = t('storage.empty');
     return;
   }
   wrap.innerHTML = all.map(d => {
@@ -2096,18 +2566,23 @@ function applyFilters(rows) {
 
 function refreshFilters() {
   const rows = getAllRows();
-  // Populate filter dropdowns
-  const setOpts = (id, vals, current) => {
+  // Populate filter dropdowns. For 'channel', translate display while keeping value as code.
+  // Default option text comes from i18n (different per dropdown).
+  const setOpts = (id, vals, current, defaultKey, transformValue) => {
     const el = document.getElementById(id);
-    const opts = ['<option value="">All</option>'].concat(
-      [...vals].sort().map(v => `<option value="${v}"${v === current ? ' selected' : ''}>${v}</option>`)
+    const defaultLabel = defaultKey ? t(defaultKey) : 'All';
+    const opts = [`<option value="" data-i18n="${defaultKey || ''}">${defaultLabel}</option>`].concat(
+      [...vals].sort().map(v => {
+        const display = transformValue ? transformValue(v) : v;
+        return `<option value="${v}"${v === current ? ' selected' : ''}>${display}</option>`;
+      })
     );
     el.innerHTML = opts.join('');
   };
-  setOpts('filter-dc', uniq(rows.map(r => r.dc_code).filter(Boolean)), APP.filter.dc);
-  setOpts('filter-channel', uniq(rows.map(r => r.channel).filter(Boolean)), APP.filter.channel);
-  setOpts('filter-salesman', uniq(rows.map(r => r.salesman_code).filter(Boolean)), APP.filter.salesman);
-  setOpts('filter-month', uniq(rows.map(r => r.kpi_month).filter(Boolean)), APP.filter.month);
+  setOpts('filter-dc',       uniq(rows.map(r => r.dc_code).filter(Boolean)),     APP.filter.dc,       'filter.allDcs');
+  setOpts('filter-channel',  uniq(rows.map(r => r.channel).filter(Boolean)),     APP.filter.channel,  'filter.allChannels', (v) => tVal('channel', v));
+  setOpts('filter-salesman', uniq(rows.map(r => r.salesman_code).filter(Boolean)), APP.filter.salesman, 'filter.allSalesmen');
+  setOpts('filter-month',    uniq(rows.map(r => r.kpi_month).filter(Boolean)),   APP.filter.month,    'filter.latestMonth');
   renderDashboard();
 }
 
@@ -2132,7 +2607,7 @@ function renderDashboard() {
 //   ≥1.5 🟢 on target (North Star goal)
 // ===================================================================
 function computeElasticity(rows) {
-  const presales = rows.filter(r => r.channel === 'Presales');
+  const presales = rows.filter(r => isCoreEqChannel(r.channel));
   if (presales.length === 0) return null;
 
   const months = uniq(presales.map(r => r.kpi_month).filter(Boolean)).sort();
@@ -2189,7 +2664,7 @@ function renderDiagnostics(rows) {
   // show N/A banner and hide all widgets — Core Equation is meaningless there.
   const banner = document.getElementById('diag-na-banner');
   const widgets = document.getElementById('diag-widgets');
-  const isFilteredNonPresales = APP.filter.channel && APP.filter.channel !== 'Presales';
+  const isFilteredNonPresales = APP.filter.channel && !isCoreEqChannel(APP.filter.channel);
   if (banner && widgets) {
     if (isFilteredNonPresales) {
       banner.classList.remove('hidden');
@@ -2202,7 +2677,7 @@ function renderDiagnostics(rows) {
   }
 
   // F2 issue 4: lock to Presales rows internally. Global filter still narrows by DC/SM.
-  const presalesRows = rows.filter(r => r.channel === 'Presales');
+  const presalesRows = rows.filter(r => isCoreEqChannel(r.channel));
   if (presalesRows.length === 0) {
     // No Presales in scope — show empty state
     document.getElementById('diag-bills-total').textContent = '—';
@@ -2239,7 +2714,7 @@ function renderDiagnostics(rows) {
   const bridgeEl = document.getElementById('diag-bridge');
   if (bridgeEl) {
     if (!prevAgg) {
-      bridgeEl.innerHTML = '<p class="text-slate-400 italic">No previous month for bridge.</p>';
+      bridgeEl.innerHTML = `<p class="text-slate-400 italic">${t('diag.noPrevMonth')}</p>`;
     } else if (level === 'dc') {
       bridgeEl.innerHTML = renderBridgeRow(curAgg, prevAgg, prevMonth, curMonth);
     } else {
@@ -2460,14 +2935,15 @@ function normalizeFactRows(rows) {
   // setting these for non-Presales would produce inflated/meaningless ratios.
   // sales/active/drop_size/n_invoices remain — those are channel-agnostic.
   for (const r of rows) {
-    const isPresales = r.channel === 'Presales';
+    const isPresales = isCoreEqChannel(r.channel);
     if (r.strike_rate_outlet === undefined) {
       r.strike_rate_outlet = isPresales ? (r.active ? 1 : 0) : null;
     } else if (!isPresales) {
       r.strike_rate_outlet = null;  // force-null even if upstream set it (from cached old data)
     }
     if (r.bills_per_aso === undefined) {
-      r.bills_per_aso = isPresales ? ((r.active > 0) ? (r.n_invoices || 0) / r.active : 0) : null;
+      // active=0 → null (division undefined). Putting 0 would skew channel mean down.
+      r.bills_per_aso = isPresales ? ((r.active > 0) ? (r.n_invoices || 0) / r.active : null) : null;
     } else if (!isPresales) {
       r.bills_per_aso = null;
     }
@@ -2499,13 +2975,15 @@ function normalizeFactRows(rows) {
   const activeRows = rows.filter(r => r.active === 1);
 
   // Peer p25 per (month, quadrant) for Drop and Bills/ASO
+  // bills_per_aso is null when active=0 (division undefined); skip those rows when
+  // building the peer benchmark — pushing 0 would skew P25 downward.
   const peerKey = r => `${r.kpi_month}|${r.quadrant || ''}`;
   const peerBuckets = new Map();
   for (const r of activeRows) {
     const k = peerKey(r);
     if (!peerBuckets.has(k)) peerBuckets.set(k, { drop: [], bpa: [] });
     peerBuckets.get(k).drop.push(r.drop_size || 0);
-    peerBuckets.get(k).bpa.push(r.bills_per_aso || 0);
+    if (r.bills_per_aso != null) peerBuckets.get(k).bpa.push(r.bills_per_aso);
   }
   const peerP25 = new Map();
   for (const [k, v] of peerBuckets) {
@@ -2526,7 +3004,7 @@ function normalizeFactRows(rows) {
       const prevDrops = [], prevBpas = [];
       for (let j = Math.max(0, i - 3); j < i; j++) {
         prevDrops.push(list[j].drop_size || 0);
-        prevBpas.push(list[j].bills_per_aso || 0);
+        if (list[j].bills_per_aso != null) prevBpas.push(list[j].bills_per_aso);
       }
       selfMed.set(`${cust}|${list[i].kpi_month}`, {
         drop: median(prevDrops), bpa: median(prevBpas),
@@ -2559,7 +3037,207 @@ function normalizeFactRows(rows) {
     else if (sevBpa === '🟡') parts.push('Bills/ASO อ่อน');
     r.reasoning_text = parts.length ? parts.join('; ') : 'อยู่ในเกณฑ์';
   }
+
+  // --- 3b. Fill missing rsm/asm from DC-level mapping (constant per DC) ---
+  for (const col of ['rsm', 'asm']) {
+    const dcMap = new Map();
+    for (const r of rows) {
+      if (r[col] && r.dc_code && !dcMap.has(r.dc_code)) dcMap.set(r.dc_code, r[col]);
+    }
+    for (const r of rows) {
+      if (!r[col] && dcMap.has(r.dc_code)) r[col] = dcMap.get(r.dc_code);
+    }
+  }
+
+  // --- 4. RS Route Optimize: outlet situation + evidence ---
+  computeOutletSituation(rows);
+
   return rows;
+}
+
+// RS Route Optimize (mirrors generator.py _compute_outlet_situation).
+// Diagnoses WHY an outlet is falling: route (fixable) vs shop (reduce/cut).
+const RO_CFG = {
+  zone: 'LowP_LowH', watchZones: ['MidP_LowH', 'HighP_LowH'],
+  vcMin: 0.8, tcMin: 0.5, newTenure: 6, deadDays: 180,
+  SIT_NORMAL: 'ปกติ', SIT_NEW: 'รอประเมิน', SIT_WATCH: 'เฝ้าระวัง',
+  SIT_GROW: 'เพิ่มความถี่', SIT_DEVELOP: 'พัฒนา', SIT_CHOPPY: 'ซื้อไม่สม่ำเสมอ',
+  SIT_ROUTE: 'แก้ Route Quality',
+  SIT_RECOVER: 'ทำให้ร้านกลับมาซื้อ', SIT_REDUCE: 'ลดความถี่', SIT_CUT: 'พิจารณาตัด',
+  choppyMin: 3,
+  actionSit: {
+    'A01_promote_f1_to_f2': 'เพิ่มความถี่',
+    'A02_demote_f2_to_f1': 'ลดความถี่',
+    'A03_pfs_coaching': 'พัฒนา',
+    'A04_sku_expansion': 'พัฒนา',
+    'A05_reactivate': 'ทำให้ร้านกลับมาซื้อ',
+  },
+};
+const RO_ACTION_LABEL = {
+  'A01_promote_f1_to_f2': 'A01 เพิ่มความถี่',
+  'A02_demote_f2_to_f1': 'A02 ลด F2→F1',
+  'A03_pfs_coaching': 'A03 โค้ช PFS',
+  'A04_sku_expansion': 'A04 เพิ่ม SKU',
+  'A05_reactivate': 'A05 ปลุกร้าน',
+  'A06_strike_rate_recovery': 'A06 กู้ปิดการขาย',
+  'A00_no_action': 'ไม่มีงานเด่น',
+  'A99_pending_model': 'รอโมเดล Credit',
+};
+const RO_SIT_ORDER = {
+  'พิจารณาตัด': 0, 'ลดความถี่': 1, 'แก้ Route Quality': 2, 'ทำให้ร้านกลับมาซื้อ': 3,
+  'พัฒนา': 4, 'ซื้อไม่สม่ำเสมอ': 5, 'เฝ้าระวัง': 6, 'เพิ่มความถี่': 7, 'รอประเมิน': 8, 'ปกติ': 9,
+};
+const RO_RESULT_TYPE = {
+  'เพิ่มความถี่': 'เพิ่มยอด', 'พัฒนา': 'เพิ่มยอด',
+  'ทำให้ร้านกลับมาซื้อ': 'กู้ยอดคืน', 'แก้ Route Quality': 'กู้ยอดคืน',
+  'ซื้อไม่สม่ำเสมอ': 'รักษายอด', 'เฝ้าระวัง': 'รักษายอด',
+  'ลดความถี่': 'ลด cost', 'พิจารณาตัด': 'ลด cost',
+  'รอประเมิน': 'รอดู', 'ปกติ': '—',
+};
+function roCause(sit, act, vc, tca, tc1, tc2, tc3, active) {
+  const A = act || '';
+  if (sit === 'พัฒนา') {
+    if (A === 'A03_pfs_coaching') return 'PFS (คะแนน PFS)';
+    if (A === 'A04_sku_expansion') return 'SKU (จำนวนสินค้า)';
+    return 'Strike Rate (ปิดไม่สม่ำเสมอ)';   // A06 active=1: เดือนนี้ปิดได้ ประวัติไม่สม่ำเสมอ
+  }
+  if (sit === 'ลดความถี่') return 'Drop Size (ยอดต่อบิล)';
+  if (sit === 'เพิ่มความถี่') return 'Visit (เข้าเยี่ยม)';
+  if (sit === 'ทำให้ร้านกลับมาซื้อ') return 'Active (การซื้อ)';
+  if (sit === 'ซื้อไม่สม่ำเสมอ') return 'Active (การซื้อ)';
+  if (sit === 'เฝ้าระวัง') return 'Health (สุขภาพรวม)';
+  if (sit === 'พิจารณาตัด') return A === 'A06_strike_rate_recovery' ? 'Strike Rate (ปิดการขาย)' : 'Active (การซื้อ)';
+  if (sit === 'แก้ Route Quality') {
+    if (vc < 0.8) return 'Visit (เข้าเยี่ยม)';
+    if (tc3 != null && tc3 < 0.5) return 'TC3 (เวลาในร้าน)';
+    if (tc2 != null && tc2 < 0.5) return 'TC2 (เวลาเข้า)';
+    if (tc1 != null && tc1 < 0.5) return 'TC1 (วันเข้า)';
+    return 'TC3 (เวลาในร้าน)';
+  }
+  return '—';
+}
+function computeOutletSituation(rows) {
+  let firstDataMo = null;
+  for (const r of rows) {
+    if (!firstDataMo || r.kpi_month < firstDataMo) firstDataMo = r.kpi_month;
+  }
+  const isCore = ch => ch === 'Presales' || ch === 'VanSales';
+  const byCust = new Map();
+  for (const r of rows) {
+    r.outlet_situation = RO_CFG.SIT_NORMAL;
+    r.situation_evidence = '';
+    r.signal = '';
+    if (!isCore(r.channel)) continue;
+    if (!byCust.has(r.customer_code)) byCust.set(r.customer_code, []);
+    byCust.get(r.customer_code).push(r);
+  }
+  const SIG_WINDOW = 5;
+  for (const [cc, list] of byCust) {
+    list.sort((a, b) => a.kpi_month < b.kpi_month ? -1 : a.kpi_month > b.kpi_month ? 1 : 0);
+    const censored = list[0].kpi_month === firstDataMo;
+    let streak = 0;
+    for (let i = 0; i < list.length; i++) {
+      const r = list[i];
+      // Red-flag signal: ไม่ซื้อกี่เดือน ใน N เดือนล่าสุด
+      const wStart = Math.max(0, i - SIG_WINDOW + 1);
+      const win = list.slice(wStart, i + 1);
+      const nInactive = win.filter(x => !(x.active || 0)).length;
+      r.signal = `ไม่ซื้อ ${nInactive}/${win.length} เดือน`;
+
+      const inZone = r.quadrant === RO_CFG.zone;
+      streak = inZone ? streak + 1 : 0;
+      const vc = r.visit_compliance || 0, tca = r.tc_avg || 0;
+      const tenure = r.tenure_months || 0;
+      const active = r.active || 0;
+      const act = r.primary_action || '';
+      const days = (r.day_since_last_sales != null && !isNaN(r.day_since_last_sales)) ? r.day_since_last_sales : 9999;
+      const sold = active ? 'ขายได้' : 'ไม่ขาย';
+      const dayTxt = days < 9999 ? ` · หาย ${Math.round(days)} วัน` : '';
+
+      const routeOk = (vc >= RO_CFG.vcMin && tca >= RO_CFG.tcMin);
+
+      // (1) ACTION-DRIVEN: ร้านมี action → situation ตาม action (ทุกโซน)
+      if (RO_CFG.actionSit[act]) {
+        r.outlet_situation = RO_CFG.actionSit[act];
+        r.situation_evidence = sitEvidence(act, r.quadrant, vc, tca, days, active, sold, dayTxt, inZone, routeOk);
+        continue;
+      }
+      if (act === 'A06_strike_rate_recovery') {
+        if (active) r.outlet_situation = RO_CFG.SIT_DEVELOP;
+        else if (days >= RO_CFG.deadDays) r.outlet_situation = RO_CFG.SIT_CUT;
+        else if (!routeOk) r.outlet_situation = RO_CFG.SIT_ROUTE;
+        else r.outlet_situation = RO_CFG.SIT_CUT;
+        r.situation_evidence = sitEvidence(act, r.quadrant, vc, tca, days, active, sold, dayTxt, inZone, routeOk);
+        continue;
+      }
+
+      // (2) A00 → context: zone + active + วัน + signal
+      // 2a. ร้านใหม่ใน LowP_LowH
+      if (inZone && tenure < RO_CFG.newTenure && !censored) {
+        r.outlet_situation = RO_CFG.SIT_NEW;
+        r.situation_evidence = `ร้านใหม่ ${Math.round(tenure)} เดือน · ตก ${streak} เดือน · ${sold}`;
+        continue;
+      }
+      // 2b. ตายแล้ว (Option B: ก่อน route)
+      if (active === 0 && days >= RO_CFG.deadDays) {
+        r.outlet_situation = RO_CFG.SIT_CUT;
+        r.situation_evidence = `ไม่ขาย${dayTxt} · ตก ${streak} เดือน · เข้าเยี่ยม ${(vc*100).toFixed(0)}%`;
+        continue;
+      }
+      // 2c. route แย่ใน LowP_LowH
+      if (inZone && !routeOk) {
+        r.outlet_situation = RO_CFG.SIT_ROUTE;
+        r.situation_evidence = `เข้าเยี่ยม ${(vc*100).toFixed(0)}% · คุณภาพเยี่ยม ${(tca*100).toFixed(0)}% · ตก ${streak} เดือน · ${sold}`;
+        continue;
+      }
+      // 2d. ขายๆหยุดๆ — ขายเดือนนี้ + route ดี + ไม่ซื้อ ≥3/window
+      if (active === 1 && routeOk && nInactive >= RO_CFG.choppyMin) {
+        r.outlet_situation = RO_CFG.SIT_CHOPPY;
+        r.situation_evidence = `ขายได้ · เข้าเยี่ยม ${(vc*100).toFixed(0)}% (ดี) · ซื้อเป็นรอบ ไม่สม่ำเสมอ`;
+        continue;
+      }
+      // 2e. LowP_LowH ไม่ขาย route ดี → ดึงกลับ
+      if (inZone && active === 0) {
+        r.outlet_situation = RO_CFG.SIT_RECOVER;
+        r.situation_evidence = `เข้าเยี่ยม ${(vc*100).toFixed(0)}% (ดี)${dayTxt} · ตก ${streak} เดือน · ไม่ขาย`;
+        continue;
+      }
+      // 2f. _LowH → เฝ้าระวัง
+      if (RO_CFG.watchZones.includes(r.quadrant)) {
+        r.outlet_situation = RO_CFG.SIT_WATCH;
+        r.situation_evidence = `อ่อนแรง · เข้าเยี่ยม ${(vc*100).toFixed(0)}% · ${sold}`;
+        continue;
+      }
+      // 2g. ปกติจริง
+      r.outlet_situation = RO_CFG.SIT_NORMAL;
+      r.situation_evidence = '';
+    }
+  }
+  // Second pass: cause (lever) + result type from final situation
+  for (const r of rows) {
+    const sit = r.outlet_situation;
+    r.result_type = RO_RESULT_TYPE[sit] || '—';
+    r.cause = roCause(sit, r.primary_action || '', r.visit_compliance || 0,
+                      r.tc_avg || 0, r.tc1_pct, r.tc2_pct, r.tc3_pct, r.active || 0);
+  }
+  return rows;
+}
+
+// สรุปรายละเอียด สำหรับ action-driven situation (facts only, no action code)
+function sitEvidence(act, quad, vc, tca, days, active, sold, dayTxt, inZone, routeOk) {
+  const zoneTxt = '';   // ไม่ใส่ Quadrant ในสรุป (มีคอลัมน์ของตัวเอง)
+  const vcp = (vc*100).toFixed(0);
+  if (act === 'A05_reactivate') return `${zoneTxt}เข้าเยี่ยม ${vcp}% (ดี)${dayTxt} · ${sold} · ควรปลุกให้กลับมาซื้อ`;
+  if (act === 'A02_demote_f2_to_f1') return `${zoneTxt}เข้าเยี่ยม ${vcp}% · ${sold} · ยอดต่อบิลเล็ก ควรลดความถี่`;
+  if (act === 'A03_pfs_coaching') return `${zoneTxt}เข้าเยี่ยม ${vcp}% · ${sold} · PFS ต่ำกว่าเพื่อน ยังพัฒนาได้`;
+  if (act === 'A04_sku_expansion') return `${zoneTxt}เข้าเยี่ยม ${vcp}% · ${sold} · SKU น้อยกว่าเพื่อน ยังพัฒนาได้`;
+  if (act === 'A01_promote_f1_to_f2') return `${zoneTxt}เข้าเยี่ยม ${vcp}% · ${sold} · ร้านดี ควรเพิ่มความถี่`;
+  if (act === 'A06_strike_rate_recovery') {
+    return active
+      ? `${zoneTxt}ขายได้${dayTxt} · เข้าเยี่ยม ${vcp}% · ปิดการขายไม่สม่ำเสมอ ควรพัฒนา`
+      : `${zoneTxt}ไม่ขาย${dayTxt} · เข้าเยี่ยม ${vcp}% · ปิดการขายไม่ได้นาน`;
+  }
+  return `${zoneTxt}เข้าเยี่ยม ${vcp}% · ${sold}`;
 }
 
 // Compute aggregate KPIs for a row subset
@@ -2582,11 +3260,16 @@ function aggKPIs(subset) {
   // Credit/Other channels have no On-Plan visit pattern → Coverage→0 → ratio explodes.
   // If subset has NO Presales rows AND has any non-Presales row → null those metrics.
   // Mixed subsets (DC level) keep computed value: Presales dominates the denominator.
-  const hasPresales = subset.some(r => r.channel === 'Presales');
-  const hasNonPresales = subset.some(r => r.channel && r.channel !== 'Presales');
+  const hasPresales = subset.some(r => isCoreEqChannel(r.channel));
+  const hasNonPresales = subset.some(r => r.channel && !isCoreEqChannel(r.channel));
   const coreEqValid = hasPresales || !hasNonPresales;
   const aso_val = coreEqValid ? (coverage > 0 ? active / coverage : 0) : null;
   const bpa_val = coreEqValid ? (active > 0 ? bills / active : 0) : null;
+
+  // AEO coverage — % ร้านที่ active (AEO=1) จากร้านที่มีค่า AEO
+  const aeoRows = subset.filter(r => r.aeo === 0 || r.aeo === 1);
+  const aeoActive = sum(aeoRows.map(r => r.aeo));
+  const aeo_rate = aeoRows.length > 0 ? aeoActive / aeoRows.length : null;
 
   return {
     sales, active, bills, visit, succ, planned, extra, onplan, coverage, n_outlets,
@@ -2598,6 +3281,7 @@ function aggKPIs(subset) {
     pfs: mean(subset.map(r => r.pfs_score).filter(x => x != null)) || 0,
     sku_per_outlet: n_outlets > 0 ? skus / n_outlets : 0,
     uplift, upliftCount,
+    aeo_rate, aeo_active: aeoActive, aeo_total: aeoRows.length,
     // F2 additions (non-breaking)
     bills_per_aso: bpa_val,
     strike_outlet:  aso_val,                                  // alias of aso, canonical name
@@ -2636,6 +3320,7 @@ function renderOverviewV2(rows) {
     // F2 additions for swapped cards
     bills_per_aso: mean(prev3Aggs.map(a => a.bills_per_aso).filter(x => x != null)),
     strike_outlet: mean(prev3Aggs.map(a => a.strike_outlet).filter(x => x != null)),
+    aeo_rate: mean(prev3Aggs.map(a => a.aeo_rate).filter(x => x != null)),
   };
 
   // Top Q salesman within current scope
@@ -2730,6 +3415,20 @@ function renderOverviewV2(rows) {
   setVsLabel('kpi-compliance-vs3m', deltaPP(curAgg.compliance, prev3Avg?.compliance), '', 'pp');
   document.getElementById('kpi-compliance-topq').textContent = topQ.compliance ? Fmt.pct(topQ.compliance) : '—';
 
+  // AEO Coverage card
+  if (curAgg.aeo_rate == null) {
+    document.getElementById('kpi-aeo').textContent = '—';
+    document.getElementById('kpi-aeo-count').textContent = 'ไม่มีข้อมูล AEO';
+    setBadge('kpi-aeo-mom', null, 'pp');
+    setVsLabel('kpi-aeo-vs3m', null, '', 'pp');
+  } else {
+    document.getElementById('kpi-aeo').textContent = Fmt.pct(curAgg.aeo_rate);
+    document.getElementById('kpi-aeo-count').textContent =
+      `active ${curAgg.aeo_active.toLocaleString()}/${curAgg.aeo_total.toLocaleString()}`;
+    setBadge('kpi-aeo-mom', deltaPP(curAgg.aeo_rate, prevAgg?.aeo_rate), 'pp');
+    setVsLabel('kpi-aeo-vs3m', deltaPP(curAgg.aeo_rate, prev3Avg?.aeo_rate), '', 'pp');
+  }
+
   // ============ Trend line charts (12 months) ============
   const series = computeMonthlySeries(rows, months);
   drawTrendChart('trend-sales',      months, series.sales,      '#3B82F6', 'money');
@@ -2742,6 +3441,7 @@ function renderOverviewV2(rows) {
   drawTrendChart('trend-extra',      months, series.extra_pct,  '#F97316', 'pct');
   drawTrendChart('trend-strike',     months, series.strike,     '#10B981', 'pct');
   drawTrendChart('trend-pfs',        months, series.pfs,        '#8B5CF6', 'num1');
+  drawTrendChart('trend-aeo',        months, series.aeo,        '#0f6e56', 'pct');
   drawTrendChart('trend-compliance', months, series.compliance, '#EC4899', 'pct');
   drawTrendChart('trend-uplift',     months, series.uplift,     '#059669', 'money');
 
@@ -2755,7 +3455,6 @@ function renderOverviewV2(rows) {
     sum(rows.filter(r => r.kpi_month === mo && r.primary_action !== 'A00_no_action').map(r => r.expected_uplift_thb))
   ));
   setVsLabel('kpi-uplift-vs3m', deltaPct(curAgg.uplift, upliftPrev3));
-
   // ============ Distribution ============
   drawChannelMix(cur);
   renderQuadrantCompact(cur.filter(r => r.active === 1));
@@ -2777,7 +3476,7 @@ function renderOverviewV2(rows) {
         <div class="h-1.5 bg-blue-400 rounded" style="width: ${(s.sales / maxSales * 100).toFixed(0)}%"></div>
       </div>
     </div>
-  `).join('') || '<p class="text-slate-400 italic">No data</p>';
+  `).join('') || `<p class="text-slate-400 italic">${t('storage.empty')}</p>`;
 
   // Top Uplift Outlets — exclude no_action + A99 pending (Credit model TBD)
   const topUplift = [...cur].filter(r => r.primary_action !== 'A00_no_action' &&
@@ -2791,14 +3490,14 @@ function renderOverviewV2(rows) {
       </div>
       <span class="text-emerald-600 font-semibold tabular-nums">${Fmt.money(r.expected_uplift_thb)}</span>
     </div>
-  `).join('') || '<p class="text-slate-400 italic">No outlets</p>';
+  `).join('') || `<p class="text-slate-400 italic">${t('actions.noOutlets')}</p>`;
 }
 
 // Compute monthly time-series for all KPIs in one pass (avoids repeated filtering)
 function computeMonthlySeries(rows, months) {
   const series = { sales: [], bills: [], drop: [], active: [], coverage: [], sku: [],
                    visits: [], extra_pct: [], strike: [],
-                   pfs: [], compliance: [], uplift: [] };
+                   pfs: [], aeo: [], compliance: [], uplift: [] };
   for (const mo of months) {
     const sub = rows.filter(r => r.kpi_month === mo);
     const sales = sum(sub.map(r => r.sales));
@@ -2823,6 +3522,8 @@ function computeMonthlySeries(rows, months) {
     // F2: chart now plots outlet-level Strike (= ASO/Coverage); visit-level moved to Diagnostics
     series.strike.push(onplan_outlets > 0 ? active / onplan_outlets : 0);
     series.pfs.push(mean(sub.map(r => r.pfs_score).filter(x => x != null)) || 0);
+    const aeoSub = sub.filter(r => r.aeo === 0 || r.aeo === 1);
+    series.aeo.push(aeoSub.length > 0 ? sum(aeoSub.map(r => r.aeo)) / aeoSub.length : 0);
     series.compliance.push(mean(sub.map(r => r.visit_compliance)) || 0);
     series.uplift.push(uplift);
   }
@@ -2873,14 +3574,27 @@ function fmtVal(v, fmt) {
 }
 
 // Format a Y-axis tick label (abbreviated for chart axes)
-function fmtYTick(v, fmt) {
+// Chart.js callback signature: (value, index, ticks)
+// Uses tick array to detect range — if spread between adjacent ticks is small,
+// raises precision so adjacent labels don't collapse to identical strings.
+function fmtYTick(v, fmt, _index, ticks) {
+  if (v == null || isNaN(v)) return '';
   if (fmt === 'money') {
     if (Math.abs(v) >= 1e6) return (v / 1e6).toFixed(1) + 'M';
     if (Math.abs(v) >= 1e3) return (v / 1e3).toFixed(0) + 'K';
     return Math.round(v).toLocaleString();
   }
   if (fmt === 'pct') return (v * 100).toFixed(0) + '%';
-  if (fmt === 'num1') return v.toFixed(1);
+  if (fmt === 'num1') {
+    // Adaptive precision: figure out step from ticks array.
+    // If step <0.1, need ≥2 decimals; if <0.01, need 3; else 1 decimal is enough.
+    let step = 1;
+    if (Array.isArray(ticks) && ticks.length >= 2) {
+      step = Math.abs(ticks[1].value - ticks[0].value);
+    }
+    const decimals = step >= 0.5 ? 1 : step >= 0.05 ? 2 : step >= 0.005 ? 3 : 4;
+    return v.toFixed(decimals);
+  }
   return Math.round(v).toLocaleString();
 }
 
@@ -2941,7 +3655,7 @@ function drawTrendChart(id, labels, data, color, fmt) {
           ticks: {
             font: { size: 10 },
             color: '#94A3B8',
-            callback: v => fmtYTick(v, fmt),
+            callback: function(v, i, ticks) { return fmtYTick(v, fmt, i, ticks); },
             maxTicksLimit: 4,
             padding: 4,
           },
@@ -3004,7 +3718,7 @@ function drawActionPriorityChart(cur) {
   const sorted = [...groups.entries()]
     .map(([code, rs]) => ({
       code, count: rs.length,
-      label: (CONFIG.actions[code]?.name || code).replace(' to Peer Median', '').replace(' Range Expansion', ' Expand'),
+      label: (tVal('action', code) || CONFIG.actions[code]?.name || code).replace(' to Peer Median', '').replace(' Range Expansion', ' Expand'),
       value: sum(rs.map(r => r.expected_uplift_thb)),
     }))
     .sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
@@ -3034,7 +3748,7 @@ function drawActionPriorityChart(cur) {
       },
       scales: {
         x: {
-          ticks: { font: { size: 10 }, color: '#94A3B8', callback: v => fmtYTick(v, 'money') },
+          ticks: { font: { size: 10 }, color: '#94A3B8', callback: function(v, i, ticks) { return fmtYTick(v, 'money', i, ticks); } },
           grid: { color: '#F1F5F9' },
           border: { display: false },
         },
@@ -3064,11 +3778,11 @@ function renderLifecycle(rows, curMonth) {
   }
 
   const buckets = [
-    { label: 'Active',        desc: 'Bought this month',     color: 'bg-emerald-500', count: 0 },
-    { label: 'Just Inactive', desc: '< 30 days since sale',  color: 'bg-sky-400',     count: 0 },
-    { label: 'Dormant',       desc: '30-89 days · A05 ⭐',   color: 'bg-amber-500',   count: 0 },
-    { label: 'Long Dormant',  desc: '90-179 days',           color: 'bg-orange-500',  count: 0 },
-    { label: 'Lost / Closed?',desc: '180+ days',             color: 'bg-rose-500',    count: 0 },
+    { label: t('lc.active'),       desc: t('lc.activeDesc'),     color: 'bg-emerald-500', count: 0 },
+    { label: t('lc.justInactive'), desc: t('lc.justInactiveDesc'), color: 'bg-sky-400',  count: 0 },
+    { label: t('lc.dormant'),      desc: t('lc.dormantDesc'),    color: 'bg-amber-500',   count: 0 },
+    { label: t('lc.longDormant'),  desc: t('lc.longDormantDesc'),color: 'bg-orange-500',  count: 0 },
+    { label: t('lc.lost'),         desc: t('lc.lostDesc'),       color: 'bg-rose-500',    count: 0 },
   ];
   for (const [, s] of outletState) {
     if (s.activeThisMonth) buckets[0].count++;
@@ -3178,25 +3892,25 @@ function renderOutletTable() {
   const start = APP.outletPage * APP.outletPageSize;
   const page = view.slice(start, start + APP.outletPageSize);
 
-  // Headers
+  // Headers — pulled via t() so they translate when language toggles
   const cols = [
-    ['Shop Code', 'customer_code'],
-    ['Shop Name', 'shop_name'],
-    ['Salesman', 'salesman_code'],
-    ['Sales', 'sales', 'money', 'right'],
-    ['Active', 'active'],
-    ['Drop', 'drop_size', 'money', 'right'],
-    ['SKU', 'sku_per_outlet', 'num', 'right'],
-    ['Visit Success', 'strike_rate', 'pct', 'right'],   // F2: visit-level (renamed from "Strike")
-    ['Hero %', 'hero_compliance', 'pct', 'right'],       // F2: placeholder, NaN until raw Sellout
-    ['Hero Gap', 'hero_gap_list', 'text', 'left'],       // F2: list of missing Hero SKUs
-    ['PFS', 'pfs_score', 'num1', 'right'],
-    ['F', 'f_planned'],
-    ['Days', 'day_since_last_sales', 'num', 'right'],
-    ['Perf', 'performance_score', 'num1', 'right'],
-    ['Health', 'health_score', 'num1', 'right'],
-    ['Action', 'action_reason'],
-    ['Uplift', 'expected_uplift_thb', 'money', 'right'],
+    [t('col.shopCode'),    'customer_code'],
+    [t('col.shopName'),    'shop_name'],
+    [t('col.salesman'),    'salesman_code'],
+    [t('col.sales'),       'sales', 'money', 'right'],
+    [t('col.active'),      'active'],
+    [t('col.drop'),        'drop_size', 'money', 'right'],
+    [t('col.sku'),         'sku_per_outlet', 'num', 'right'],
+    [t('col.visitSuccess'),'strike_rate', 'pct', 'right'],
+    [t('col.hero'),        'hero_compliance', 'pct', 'right'],
+    [t('col.heroGap'),     'hero_gap_list', 'text', 'left'],
+    [t('col.pfs'),         'pfs_score', 'num1', 'right'],
+    [t('col.fLevel'),      'f_planned'],
+    [t('col.days'),        'day_since_last_sales', 'num', 'right'],
+    [t('col.perf'),        'performance_score', 'num1', 'right'],
+    [t('col.health'),      'health_score', 'num1', 'right'],
+    [t('col.action'),      'action_reason'],
+    [t('col.uplift'),      'expected_uplift_thb', 'money', 'right'],
   ];
   document.getElementById('outlet-table-head').innerHTML =
     cols.map(c => `<th class="${c[3] === 'right' ? 'num-right' : 'text-left'} px-3 py-2">${c[0]}</th>`).join('');
@@ -3223,15 +3937,98 @@ function renderOutletTable() {
 // ============================================================
 // ACTION TAB
 // ============================================================
+// RS Route Optimize — Watchlist render (Actions tab)
+function roPill(sit) {
+  if (sit === 'พิจารณาตัด') return 'b-rose';
+  if (sit === 'ลดความถี่') return 'b-amber';
+  if (sit === 'แก้ Route Quality') return 'b-amber';
+  if (sit === 'พัฒนา') return 'b-emerald';
+  if (sit === 'ซื้อไม่สม่ำเสมอ') return 'b-amber';
+  if (sit === 'เพิ่มความถี่') return 'b-emerald';
+  if (sit === 'ทำให้ร้านกลับมาซื้อ') return 'b-slate';
+  if (sit === 'เฝ้าระวัง') return 'b-slate';
+  if (sit === 'รอประเมิน') return 'b-slate';
+  return 'b-slate';
+}
+function renderRouteOptimize(rows, curMonth) {
+  const body = document.getElementById('ro-table-body');
+  if (!body) return;
+  // trailing-3-month avg sales per customer (ยอดที่จะเสีย)
+  const months = uniq(rows.map(r => r.kpi_month).filter(Boolean)).sort();
+  const last3 = months.slice(-3);
+  const rev3 = new Map();
+  const rev3cnt = new Map();
+  for (const r of rows) {
+    if (!last3.includes(r.kpi_month)) continue;
+    rev3.set(r.customer_code, (rev3.get(r.customer_code) || 0) + (r.sales || 0));
+    rev3cnt.set(r.customer_code, (rev3cnt.get(r.customer_code) || 0) + 1);
+  }
+  const loseOf = cc => {
+    const s = rev3.get(cc), n = rev3cnt.get(cc);
+    return (n && n > 0) ? s / n : 0;
+  };
+
+  const cur = rows.filter(r => r.kpi_month === curMonth);
+  const act = cur.filter(r => r.outlet_situation && r.outlet_situation !== 'ปกติ');
+  const totalLose = act
+    .filter(r => r.outlet_situation === 'พิจารณาตัด' || r.outlet_situation === 'ลดความถี่')
+    .reduce((s, r) => s + loseOf(r.customer_code), 0);
+  const totalEl = document.getElementById('ro-total');
+  const loseEl = document.getElementById('ro-lose');
+  if (totalEl) totalEl.textContent = act.length.toLocaleString();
+  if (loseEl) loseEl.textContent = Fmt.money(totalLose);
+
+  const filterEl = document.getElementById('ro-filter');
+  const fv = filterEl ? filterEl.value : '';
+  let shown = fv ? act.filter(r => r.outlet_situation === fv) : act;
+  shown = [...shown].sort((a, b) =>
+    (RO_SIT_ORDER[a.outlet_situation] ?? 9) - (RO_SIT_ORDER[b.outlet_situation] ?? 9) ||
+    loseOf(b.customer_code) - loseOf(a.customer_code));
+
+  if (shown.length === 0) {
+    body.innerHTML = `<tr><td colspan="5" class="px-3 py-4 text-center text-slate-400 italic">${t('ro.empty')}</td></tr>`;
+    return;
+  }
+  body.innerHTML = shown.slice(0, 300).map(r => `
+    <tr class="hover:bg-slate-50">
+      <td class="px-3 py-2">${r.shop_name || r.customer_code}</td>
+      <td class="px-3 py-2">${r.salesman_code || '—'}</td>
+      <td class="px-3 py-2"><span class="badge ${roPill(r.outlet_situation)}">${r.outlet_situation}</span></td>
+      <td class="px-3 py-2">${sigPill(r.signal)}</td>
+      <td class="px-3 py-2 text-[11px] text-slate-500">${r.situation_evidence || ''}</td>
+      <td class="num-right px-3 py-2">${Fmt.money(loseOf(r.customer_code))}</td>
+    </tr>
+  `).join('');
+}
+
+// Color the red-flag signal by inactive ratio (ไม่ซื้อ X/N เดือน)
+function sigPill(signal) {
+  if (!signal) return '<span class="text-slate-300">—</span>';
+  const m = signal.match(/(\d+)\/(\d+)/);
+  if (!m) return `<span class="text-[11px] text-slate-400">${signal}</span>`;
+  const n = +m[1], tot = +m[2];
+  const ratio = tot ? n / tot : 0;
+  let cls = 'text-slate-400';                       // 0-1 → จาง
+  if (n >= 5 || ratio >= 1) cls = 'badge b-rose';   // 5/5 → แดง
+  else if (ratio >= 0.8) cls = 'badge b-rose';      // 4/5
+  else if (ratio >= 0.6) cls = 'badge b-amber';     // 3/5
+  else if (ratio >= 0.4) cls = 'text-amber-600';    // 2/5
+  return `<span class="${cls} text-[11px]">${signal}</span>`;
+}
+
 function renderActions(rows) {
   const months = uniq(rows.map(r => r.kpi_month).filter(Boolean)).sort();
   const curMonth = APP.filter.month || months[months.length - 1];
   const cur = rows.filter(r => r.kpi_month === curMonth && r.primary_action !== 'A00_no_action');
 
-  // Summary by action
+  // RS Route Optimize watchlist (uses full month scope, not action-filtered)
+  renderRouteOptimize(rows.filter(r => r.kpi_month === curMonth || months.slice(-3).includes(r.kpi_month)), curMonth);
+
+  // Summary by action — translate action name via tVal (data layer stays as English code)
   const groups = groupBy(cur, r => r.primary_action);
   const summary = [...groups.entries()].map(([code, rs]) => ({
-    code, name: CONFIG.actions[code]?.name || code,
+    code,
+    name: tVal('action', code) || CONFIG.actions[code]?.name || code,
     count: rs.length,
     uplift: sum(rs.map(r => r.expected_uplift_thb)),
     confidence: rs[0]?.uplift_confidence || '—',
@@ -3243,13 +4040,13 @@ function renderActions(rows) {
     <div class="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
       <div>
         <div class="font-medium ${isPending ? 'text-slate-500 italic' : 'text-slate-900'}">${s.name}</div>
-        <div class="text-xs text-slate-500">${s.count} outlets · ${s.confidence} confidence</div>
+        <div class="text-xs text-slate-500">${s.count} ${t('actions.outlets')} · ${s.confidence} ${t('actions.confidence')}</div>
       </div>
       <div class="text-right font-semibold ${isPending ? 'text-slate-400' : (s.uplift >= 0 ? 'text-emerald-600' : 'text-rose-500')}">
         ${isPending ? 'N/A' : Fmt.money(s.uplift)}
       </div>
     </div>`;
-  }).join('') || '<p class="text-slate-500 italic">No actions in current scope</p>';
+  }).join('') || `<p class="text-slate-500 italic">${t('actions.noActions')}</p>`;
 
   // Top uplift outlets — skip A99 pending so list is meaningful
   const top = [...cur].filter(r => r.primary_action !== 'A99_pending_model')
@@ -3262,7 +4059,7 @@ function renderActions(rows) {
       </div>
       <div class="text-right text-emerald-600 font-semibold text-sm">${Fmt.money(r.expected_uplift_thb)}</div>
     </div>
-  `).join('') || '<p class="text-slate-500 italic">No outlets</p>';
+  `).join('') || `<p class="text-slate-500 italic">${t('actions.noOutlets')}</p>`;
 
   // Action table — top 50 (Math.abs(null)=0 → A99 rows sink to bottom; still listed so users see them)
   const tableRows = [...cur].sort((a, b) =>
@@ -3273,15 +4070,15 @@ function renderActions(rows) {
       <td class="px-3 py-2">${r.salesman_code || '—'}</td>
       <td class="px-3 py-2">
         <div class="flex items-start gap-1.5">
-          <span title="severity: ${r.severity || '—'}">${r.severity || '—'}</span>
+          <span title="${t('col.severity')}: ${r.severity || '—'}">${r.severity || '—'}</span>
           <div>
-            <div>${r.action_reason}</div>
+            <div>${tVal('action', r.primary_action) || r.action_reason || ''}</div>
             <div class="text-[11px] text-slate-500 italic">${r.reasoning_text || ''}</div>
           </div>
         </div>
       </td>
       <td class="num-right px-3 py-2 ${r.expected_uplift_thb >= 0 ? 'text-emerald-600' : 'text-rose-500'} font-medium">${Fmt.money(r.expected_uplift_thb)}</td>
-      <td class="px-3 py-2"><span class="badge ${r.uplift_confidence === 'High' ? 'b-green' : r.uplift_confidence === 'Medium' ? 'b-amber' : 'b-slate'}">${r.uplift_confidence}</span></td>
+      <td class="px-3 py-2"><span class="badge ${r.uplift_confidence === 'High' ? 'b-green' : r.uplift_confidence === 'Medium' ? 'b-amber' : 'b-slate'}">${tVal('confidence', r.uplift_confidence) || r.uplift_confidence}</span></td>
       <td class="num-right px-3 py-2">${Fmt.num1(r.performance_score)}</td>
       <td class="num-right px-3 py-2">${Fmt.num1(r.health_score)}</td>
     </tr>
@@ -3329,14 +4126,16 @@ function renderTrend() {
     row.n_outlets = uniq(rs.map(r => r.customer_code)).length;
     row.coverage = coverage;
     // F2: Core Eq (%ASO) only valid for Presales — null for non-Presales groups
-    const hasPresales = rs.some(r => r.channel === 'Presales');
-    const hasNonPresales = rs.some(r => r.channel && r.channel !== 'Presales');
+    const hasPresales = rs.some(r => isCoreEqChannel(r.channel));
+    const hasNonPresales = rs.some(r => r.channel && !isCoreEqChannel(r.channel));
     const coreEqValid = hasPresales || !hasNonPresales;
     row.aso_pct = coreEqValid && coverage > 0 ? active / coverage : null;
     row.drop_size = bills > 0 ? sales / bills : null;
     row.strike_rate = visit > 0 ? succ / visit : null;
     row.extra_pct = planned > 0 ? extra / planned : null;
     row.avg_pfs = mean(rs.map(r => r.pfs_score).filter(x => x != null));
+    const aeoRs = rs.filter(r => r.aeo === 0 || r.aeo === 1);
+    row.avg_aeo = aeoRs.length ? sum(aeoRs.map(r => r.aeo)) / aeoRs.length : null;
     row.uplift_pipeline = uplift;
     aggRows.push(row);
   }
@@ -3370,8 +4169,8 @@ function renderTrend() {
     const coverage = uniq(ms.filter(r => r.visit_onplan_count > 0).map(r => r.customer_code)).length;
     const uplift = sum(ms.filter(r => r.primary_action !== 'A00_no_action').map(r => r.expected_uplift_thb));
     // F2: Core Eq rule (Presales only)
-    const moHasPresales = ms.some(r => r.channel === 'Presales');
-    const moHasNonPresales = ms.some(r => r.channel && r.channel !== 'Presales');
+    const moHasPresales = ms.some(r => isCoreEqChannel(r.channel));
+    const moHasNonPresales = ms.some(r => r.channel && !isCoreEqChannel(r.channel));
     const moCoreEqValid = moHasPresales || !moHasNonPresales;
     return {
       total: 'TOTAL', kpi_month: mo, sales, active,
@@ -3382,6 +4181,7 @@ function renderTrend() {
       strike_rate: visit > 0 ? succ / visit : null,
       extra_pct: planned > 0 ? extra / planned : null,
       avg_pfs: mean(ms.map(r => r.pfs_score).filter(x => x != null)),
+      avg_aeo: (() => { const a = ms.filter(r => r.aeo === 0 || r.aeo === 1); return a.length ? sum(a.map(r => r.aeo)) / a.length : null; })(),
       uplift_pipeline: uplift,
     };
   });
@@ -3395,7 +4195,7 @@ function renderTrend() {
   // Render
   const headers = [...groupKeys.map(k => k.replace('_', ' ').toUpperCase()),
                    'Month', 'Sales', 'Active', 'Coverage', '%ASO',
-                   'Drop', 'Strike%', '%Extra', 'PFS', 'Uplift', 'MoM%'];
+                   'Drop', 'Strike%', '%Extra', 'PFS', 'AEO%', 'Uplift', 'MoM%'];
   document.getElementById('trend-table-head').innerHTML =
     headers.map((h, i) => `<th class="${i >= groupKeys.length + 1 ? 'num-right' : 'text-left'} px-3 py-2">${h}</th>`).join('');
 
@@ -3411,6 +4211,7 @@ function renderTrend() {
       <td class="num-right px-3 py-1.5">${Fmt.pct(r.strike_rate)}</td>
       <td class="num-right px-3 py-1.5">${Fmt.pct(r.extra_pct)}</td>
       <td class="num-right px-3 py-1.5">${Fmt.num1(r.avg_pfs)}</td>
+      <td class="num-right px-3 py-1.5">${Fmt.pct(r.avg_aeo)}</td>
       <td class="num-right px-3 py-1.5 ${r.uplift_pipeline >= 0 ? 'text-emerald-600' : 'text-rose-500'}">${Fmt.money(r.uplift_pipeline)}</td>
       <td class="num-right px-3 py-1.5 ${r.sales_mom_pct == null ? 'text-slate-400' : r.sales_mom_pct >= 0 ? 'text-emerald-600' : 'text-rose-500'}">${r.sales_mom_pct == null ? '—' : Fmt.signed(r.sales_mom_pct)}</td>
     </tr>
@@ -3428,11 +4229,76 @@ function renderTrend() {
 // ============================================================
 // EXPORT FUNCTIONS
 // ============================================================
-function exportCSV() {
-  const allRows = getAllRows();
-  if (allRows.length === 0) {
+// F2: shared DC picker for export — returns Set of dc_codes the user picked,
+// or null if cancelled. Skips dialog when only 1 DC loaded (auto-picks it).
+async function pickExportDCs(rows) {
+  const dcList = uniq(rows.map(r => r.dc_code).filter(Boolean)).sort();
+  if (dcList.length <= 1) {
+    return { dcs: new Set(dcList), label: dcList[0] || 'all', isAll: true, all: dcList };
+  }
+  const dcCounts = new Map();
+  for (const r of rows) {
+    const k = r.dc_code; if (!k) continue;
+    dcCounts.set(k, (dcCounts.get(k) || 0) + 1);
+  }
+  const checkboxHtml = dcList.map(dc => `
+    <label class="flex items-center justify-between gap-3 px-3 py-2 rounded hover:bg-slate-50 cursor-pointer">
+      <span class="flex items-center gap-2">
+        <input type="checkbox" class="dc-pick" value="${dc}" checked>
+        <span class="font-mono text-sm">DC ${dc}</span>
+      </span>
+      <span class="text-xs text-slate-400">${(dcCounts.get(dc) || 0).toLocaleString()} rows</span>
+    </label>
+  `).join('');
+
+  const res = await Swal.fire({
+    title: 'เลือก DC ที่จะ export',
+    html: `
+      <div class="text-left text-xs text-slate-500 mb-2">หลายตัวจะรวมในไฟล์เดียว.</div>
+      <div class="border border-slate-200 rounded-lg divide-y divide-slate-100 text-left max-h-72 overflow-y-auto">
+        ${checkboxHtml}
+      </div>
+      <div class="flex gap-2 justify-end mt-2 text-xs">
+        <button id="dc-pick-all" type="button" class="px-2 py-1 text-slate-600 hover:text-slate-900">เลือกทั้งหมด</button>
+        <button id="dc-pick-none" type="button" class="px-2 py-1 text-slate-600 hover:text-slate-900">ยกเลิกทั้งหมด</button>
+      </div>
+    `,
+    didOpen: () => {
+      document.getElementById('dc-pick-all').onclick = () =>
+        document.querySelectorAll('.dc-pick').forEach(cb => cb.checked = true);
+      document.getElementById('dc-pick-none').onclick = () =>
+        document.querySelectorAll('.dc-pick').forEach(cb => cb.checked = false);
+    },
+    confirmButtonText: 'Export',
+    showCancelButton: true,
+    cancelButtonText: 'ยกเลิก',
+    preConfirm: () => {
+      const picked = [...document.querySelectorAll('.dc-pick:checked')].map(cb => cb.value);
+      if (picked.length === 0) {
+        Swal.showValidationMessage('ต้องเลือกอย่างน้อย 1 DC');
+        return false;
+      }
+      return picked;
+    }
+  });
+  if (!res.isConfirmed) return null;
+  const selected = res.value;
+  return {
+    dcs: new Set(selected),
+    label: selected.length === dcList.length ? 'all' : selected.join('+'),
+    isAll: selected.length === dcList.length,
+    all: selected,
+  };
+}
+
+async function exportCSV() {
+  const allRowsRaw = getAllRows();
+  if (allRowsRaw.length === 0) {
     Swal.fire({ icon: 'info', title: 'No data to export' }); return;
   }
+  const pick = await pickExportDCs(allRowsRaw);
+  if (!pick) return;  // cancelled
+  const allRows = allRowsRaw.filter(r => pick.dcs.has(r.dc_code));
   // Convert to CSV
   const cols = Object.keys(allRows[0]);
   const lines = [cols.join(',')];
@@ -3447,20 +4313,23 @@ function exportCSV() {
   const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `fact_outlet_monthly_${new Date().toISOString().slice(0,10)}.csv`;
+  const fnamePart = pick.isAll ? '' : `_DC${pick.all.join('-')}`;
+  a.download = `fact_outlet_monthly${fnamePart}_${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
-  Swal.fire({ icon: 'success', title: 'CSV exported', timer: 1500, showConfirmButton: false });
+  Swal.fire({ icon: 'success', title: `CSV exported (DC ${pick.label})`, timer: 1500, showConfirmButton: false });
 }
 
 async function exportExcel() {
-  // Use ALL rows (not filtered) so Sheet 4 Monthly Trend includes all channels/salesmen
-  // Filter only applies in-app, not in Excel deliverable
-  const allRows = getAllRows();
-  if (allRows.length === 0) {
+  const allRowsRaw = getAllRows();
+  if (allRowsRaw.length === 0) {
     Swal.fire({ icon: 'info', title: 'No data to export' }); return;
   }
+  const pick = await pickExportDCs(allRowsRaw);
+  if (!pick) return;  // cancelled
+  const allRows = allRowsRaw.filter(r => pick.dcs.has(r.dc_code));
+  const dcLabel = pick.label;
 
-  Swal.fire({ title: 'Building Excel...', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
+  Swal.fire({ title: `Building Excel for DC ${dcLabel}...`, didOpen: () => Swal.showLoading(), allowOutsideClick: false });
   await sleep(50);
 
   // ----- Pre-compute outlet lifecycle (as of latest month) -----
@@ -3498,23 +4367,27 @@ async function exportExcel() {
 
   const wb = XLSX.utils.book_new();
 
-  // Sheet 1: Outlet Database (F2 schema mirror — D1 rename, new cols, drop yoy, fill ytd)
-  const s1cols = ['kpi_month', 'dc_code', 'channel', 'salesman_code', 'rsm', 'asm',
-                  'customer_code', 'shop_name', 'shop_segment', 'shop_type',
-                  'sales', 'active', 'n_invoices', 'drop_size', 'sku_per_outlet',
-                  'visit_count', 'visit_planned_count', 'visit_onplan_count',
-                  'visit_extra_count', 'visit_successful_count',
-                  // F2 D1 rename: strike_rate(visit) → visit_success_rate
-                  'visit_success_rate', 'extra_pct', 'tc1_pct', 'tc2_pct', 'tc3_pct', 'tc_avg',
-                  'pfs_score', 'f_planned', 'f_source', 'visit_compliance',
-                  'day_since_last_sales', 'lifecycle_band',
-                  // F2: drop sales_yoy_pct (uncomputable with 12mo window); keep ytd computed
-                  'sales_mom_pct', 'sales_ytd',
-                  'performance_score', 'health_score', 'quadrant',
-                  'primary_action', 'action_reason', 'expected_uplift_thb', 'uplift_confidence',
-                  // F2 STEP 1 additions
-                  'strike_rate_outlet', 'bills_per_aso', 'hero_compliance', 'hero_gap_list',
-                  'tenure_months', 'severity', 'reasoning_text'];
+  // Sheet 1: Outlet Database — logical reading groups (mirror generator)
+  const s1cols = [
+    'kpi_month', 'dc_code', 'channel', 'salesman_code', 'rsm', 'asm',
+    'customer_code', 'shop_name', 'shop_segment', 'shop_type',
+    'sales', 'active', 'aeo', 'n_invoices', 'drop_size', 'sku_per_outlet',
+    'strike_rate_outlet', 'bills_per_aso',
+    'visit_count', 'visit_planned_count', 'visit_onplan_count',
+    'visit_extra_count', 'visit_successful_count', 'visit_success_rate',
+    'extra_pct', 'tc1_pct', 'tc2_pct', 'tc3_pct', 'tc_avg',
+    'pfs_score', 'f_planned', 'f_source', 'visit_compliance',
+    'day_since_last_sales', 'lifecycle_band', 'sales_mom_pct', 'sales_ytd',
+    'tenure_months', 'hero_compliance', 'hero_gap_list',
+    'performance_score', 'health_score', 'quadrant',
+    'outlet_situation', 'cause', 'result_type', 'signal', 'situation_evidence',
+    'primary_action', 'action_reason', 'severity', 'reasoning_text',
+    'expected_uplift_thb', 'uplift_confidence'];
+  const s1HeaderMap = {
+    aeo: 'AEO',
+    outlet_situation: 'Action', cause: 'สาเหตุ', result_type: 'ผลที่ได้',
+    signal: 'สัญญาณ', situation_evidence: 'สรุปรายละเอียด',
+  };
 
   // Compute sales_ytd live for export (was missing in legacy rows)
   // Cumulative sales per outlet within calendar year (resets each January)
@@ -3537,7 +4410,7 @@ async function exportExcel() {
     return r[c] ?? '';
   };
 
-  const s1Data = [s1cols.map(c => c.replace(/_/g, ' '))];
+  const s1Data = [s1cols.map(c => s1HeaderMap[c] || c.replace(/_/g, ' '))];
   for (const r of allRows) s1Data.push(s1cols.map(c => getField(r, c)));
   const ws1 = XLSX.utils.aoa_to_sheet(s1Data);
   XLSX.utils.book_append_sheet(wb, ws1, '1_Outlet_Database');
@@ -3552,9 +4425,13 @@ async function exportExcel() {
   // F2: D1 rename + add Strike Rate (outlet) + Bills per ASO at end
   const s2HeaderCols = ['Sales', 'Active', 'N Outlets', 'Coverage', '%ASO',
                         'N Invoices', 'Drop', 'Visit Call', 'Visit Planned',
-                        'Visit Success Rate', '%Extra', 'PFS Avg', 'SKU/Outlet Avg',
+                        'Visit Success Rate', '%Extra', 'PFS Avg', '%AEO', 'SKU/Outlet Avg',
                         'Visit Compliance', 'Uplift',
                         'Strike Rate', 'Bills per ASO'];
+  const aeoOf = rs => {
+    const a = rs.filter(r => r.aeo === 0 || r.aeo === 1);
+    return a.length > 0 ? sum(a.map(r => r.aeo)) / a.length : null;
+  };
 
   const buildSection = (df, groupCols, title) => {
     s2Data.push([title]);
@@ -3575,8 +4452,8 @@ async function exportExcel() {
       const uplift = sum(rs.filter(r => r.primary_action !== 'A00_no_action').map(r => r.expected_uplift_thb));
       const sku_avg = n_outlets > 0 ? sum(rs.map(r => r.sku_per_outlet || 0)) / n_outlets : 0;
       // F2: Core Eq (%ASO) only valid for Presales. Null → blank cell in xlsx.
-      const hasPresales = rs.some(r => r.channel === 'Presales');
-      const hasNonPresales = rs.some(r => r.channel && r.channel !== 'Presales');
+      const hasPresales = rs.some(r => isCoreEqChannel(r.channel));
+      const hasNonPresales = rs.some(r => r.channel && !isCoreEqChannel(r.channel));
       const coreEqValid = hasPresales || !hasNonPresales;
       rows.push([
         ...keys, sales, active, n_outlets, coverage,
@@ -3585,6 +4462,7 @@ async function exportExcel() {
         visit > 0 ? succ / visit : 0,
         planned > 0 ? extra / planned : 0,
         mean(rs.map(r => r.pfs_score).filter(x => x != null)) || 0,
+        aeoOf(rs),
         sku_avg,
         mean(rs.map(r => r.visit_compliance)) || 0,
         uplift,
@@ -3606,8 +4484,8 @@ async function exportExcel() {
     const uplift = sum(df.filter(r => r.primary_action !== 'A00_no_action').map(r => r.expected_uplift_thb));
     const sku_avg = n_outlets > 0 ? sum(df.map(r => r.sku_per_outlet || 0)) / n_outlets : 0;
     // F2: same Core Eq rule for section TOTAL
-    const totHasPresales = df.some(r => r.channel === 'Presales');
-    const totHasNonPresales = df.some(r => r.channel && r.channel !== 'Presales');
+    const totHasPresales = df.some(r => isCoreEqChannel(r.channel));
+    const totHasNonPresales = df.some(r => r.channel && !isCoreEqChannel(r.channel));
     const totCoreEqValid = totHasPresales || !totHasNonPresales;
     rows.push([
       ...groupCols.map(() => 'TOTAL'), sales, active, n_outlets, coverage,
@@ -3616,6 +4494,7 @@ async function exportExcel() {
       visit > 0 ? succ / visit : 0,
       planned > 0 ? extra / planned : 0,
       mean(df.map(r => r.pfs_score).filter(x => x != null)) || 0,
+      aeoOf(df),
       sku_avg,
       mean(df.map(r => r.visit_compliance)) || 0,
       uplift,
@@ -3634,14 +4513,15 @@ async function exportExcel() {
       // Visit Success Rate, %Extra at baseCol+9, baseCol+10
       s2DecimalCells.push({ r: rowIdx, c: baseCol + 9, format: '0.0%' });
       s2DecimalCells.push({ r: rowIdx, c: baseCol + 10, format: '0.0%' });
-      // PFS Avg at baseCol+11, SKU at baseCol+12 (decimal)
+      // PFS Avg at baseCol+11, AEO at baseCol+12, SKU at baseCol+13 (decimal/pct)
       s2DecimalCells.push({ r: rowIdx, c: baseCol + 11, format: '0.0' });
-      s2DecimalCells.push({ r: rowIdx, c: baseCol + 12, format: '0.0' });
-      // Visit Compliance at baseCol+13 (pct)
-      s2DecimalCells.push({ r: rowIdx, c: baseCol + 13, format: '0.0%' });
-      // F2 NEW: Strike Rate (outlet) at baseCol+15 (pct), Bills per ASO at baseCol+16 (decimal)
-      s2DecimalCells.push({ r: rowIdx, c: baseCol + 15, format: '0.0%' });
-      s2DecimalCells.push({ r: rowIdx, c: baseCol + 16, format: '0.00' });
+      s2DecimalCells.push({ r: rowIdx, c: baseCol + 12, format: '0.0%' });   // %AEO
+      s2DecimalCells.push({ r: rowIdx, c: baseCol + 13, format: '0.0' });
+      // Visit Compliance at baseCol+14 (pct)
+      s2DecimalCells.push({ r: rowIdx, c: baseCol + 14, format: '0.0%' });
+      // F2 NEW: Strike Rate (outlet) at baseCol+16 (pct), Bills per ASO at baseCol+17 (decimal)
+      s2DecimalCells.push({ r: rowIdx, c: baseCol + 16, format: '0.0%' });
+      s2DecimalCells.push({ r: rowIdx, c: baseCol + 17, format: '0.00' });
     }
     s2Data.push(...rows);
     s2Data.push([]);
@@ -3657,26 +4537,7 @@ async function exportExcel() {
   }
   XLSX.utils.book_append_sheet(wb, ws2, '2_Snapshot_Latest');
 
-  // Sheet 3: Scenario Builder (placeholder - simple version with formulas referencing Sheet1)
-  const ws3Data = [
-    ['Scenario Builder'],
-    ['Adjust inputs to simulate. Open Sheet 1 to see filtered details.'],
-    [],
-    ['INPUT'],
-    ['Filter Month', latestMo],
-    ['Filter DC', ''],
-    ['Filter Salesman (or ALL)', 'ALL'],
-    ['Action Code', 'A01_promote_f1_to_f2'],
-    [],
-    ['IMPACT (filtered subset)'],
-    ['KPI', 'Before', 'After (est)', 'Δ'],
-    ['Sales', '', '', ''],
-    ['Active Outlets', '', '', ''],
-    ['Uplift (THB/mo)', '', '', ''],
-    [],
-    ['Use Sheet 1 filters for detailed analysis.'],
-  ];
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ws3Data), '3_Scenario_Builder');
+  // Sheet 3 (Scenario Builder) removed — was an unimplemented placeholder.
 
   // Sheet 4: Monthly Trend
   const s4Data = [[`Monthly Trend | ${months[0]} → ${months[months.length-1]}`], []];
@@ -3684,7 +4545,7 @@ async function exportExcel() {
   const buildTrend = (df, groupCols, title) => {
     s4Data.push([title]);
     s4Data.push([...groupCols, 'Month', 'Sales', 'Active', 'Coverage', '%ASO',
-                 'Drop', 'Visit Success Rate', '%Extra', 'PFS Avg', 'SKU/Outlet Avg',
+                 'Drop', 'Visit Success Rate', '%Extra', 'PFS Avg', '%AEO', 'SKU/Outlet Avg',
                  'Visit Compliance', 'Uplift', 'Sales MoM%']);
     // Group by entity x month
     const entityMonthKey = r => groupCols.map(c => r[c]).join('|') + '__' + r.kpi_month;
@@ -3705,8 +4566,8 @@ async function exportExcel() {
       const uplift = sum(rs.filter(r => r.primary_action !== 'A00_no_action').map(r => r.expected_uplift_thb));
       const sku_avg = n_outlets > 0 ? sum(rs.map(r => r.sku_per_outlet || 0)) / n_outlets : 0;
       // F2: Core Eq (%ASO) only valid for Presales — null for non-Presales groups so cell renders blank
-      const hasPresales = rs.some(r => r.channel === 'Presales');
-      const hasNonPresales = rs.some(r => r.channel && r.channel !== 'Presales');
+      const hasPresales = rs.some(r => isCoreEqChannel(r.channel));
+      const hasNonPresales = rs.some(r => r.channel && !isCoreEqChannel(r.channel));
       const coreEqValid = hasPresales || !hasNonPresales;
       aggRows.push({
         keys, mo, sales, active, coverage,
@@ -3715,6 +4576,7 @@ async function exportExcel() {
         strike: visit > 0 ? succ / visit : 0,
         extra_pct: planned > 0 ? extra / planned : 0,
         pfs: mean(rs.map(r => r.pfs_score).filter(x => x != null)) || 0,
+        aeo: (() => { const a = rs.filter(r => r.aeo === 0 || r.aeo === 1); return a.length ? sum(a.map(r => r.aeo)) / a.length : null; })(),
         sku: sku_avg,
         compliance: mean(rs.map(r => r.visit_compliance)) || 0,
         uplift,
@@ -3733,18 +4595,19 @@ async function exportExcel() {
     let rowOffset = 0;
     for (const r of aggRows) {
       s4Data.push([...r.keys, r.mo, r.sales, r.active, r.coverage, r.aso,
-                   r.drop, r.strike, r.extra_pct, r.pfs, r.sku, r.compliance, r.uplift, r.mom]);
+                   r.drop, r.strike, r.extra_pct, r.pfs, r.aeo, r.sku, r.compliance, r.uplift, r.mom]);
       const ri = dataStartIdx + rowOffset;
       const baseCol = groupCols.length;
       // Month at baseCol, Sales+1, Active+2, Coverage+3, %ASO+4, Drop+5,
-      // Strike+6, %Extra+7, PFS+8, SKU+9, Compliance+10, Uplift+11, MoM+12
+      // Strike+6, %Extra+7, PFS+8, AEO+9, SKU+10, Compliance+11, Uplift+12, MoM+13
       s4DecimalCells.push({ r: ri, c: baseCol + 4, format: '0.0%' }); // %ASO
       s4DecimalCells.push({ r: ri, c: baseCol + 6, format: '0.0%' }); // Strike
       s4DecimalCells.push({ r: ri, c: baseCol + 7, format: '0.0%' }); // %Extra
       s4DecimalCells.push({ r: ri, c: baseCol + 8, format: '0.0' });  // PFS
-      s4DecimalCells.push({ r: ri, c: baseCol + 9, format: '0.0' });  // SKU
-      s4DecimalCells.push({ r: ri, c: baseCol + 10, format: '0.0%' }); // Compliance
-      s4DecimalCells.push({ r: ri, c: baseCol + 12, format: '+0.0;-0.0' }); // MoM
+      s4DecimalCells.push({ r: ri, c: baseCol + 9, format: '0.0%' }); // %AEO
+      s4DecimalCells.push({ r: ri, c: baseCol + 10, format: '0.0' });  // SKU
+      s4DecimalCells.push({ r: ri, c: baseCol + 11, format: '0.0%' }); // Compliance
+      s4DecimalCells.push({ r: ri, c: baseCol + 13, format: '+0.0;-0.0' }); // MoM
       rowOffset++;
     }
     // Totals per month
@@ -3763,15 +4626,18 @@ async function exportExcel() {
       const uplift = sum(ms.filter(r => r.primary_action !== 'A00_no_action').map(r => r.expected_uplift_thb));
       const sku_avg = n_outlets > 0 ? sum(ms.map(r => r.sku_per_outlet || 0)) / n_outlets : 0;
       // F2: Core Eq rule
-      const moHasPresales = ms.some(r => r.channel === 'Presales');
-      const moHasNonPresales = ms.some(r => r.channel && r.channel !== 'Presales');
+      const moHasPresales = ms.some(r => isCoreEqChannel(r.channel));
+      const moHasNonPresales = ms.some(r => r.channel && !isCoreEqChannel(r.channel));
       const moCoreEqValid = moHasPresales || !moHasNonPresales;
+      const moAeoRows = ms.filter(r => r.aeo === 0 || r.aeo === 1);
+      const moAeo = moAeoRows.length ? sum(moAeoRows.map(r => r.aeo)) / moAeoRows.length : null;
       s4Data.push([...groupCols.map(() => 'TOTAL'), mo, sales, active, coverage,
                    moCoreEqValid && coverage > 0 ? active / coverage : null,
                    bills > 0 ? sales / bills : 0,
                    visit > 0 ? succ / visit : 0,
                    planned > 0 ? extra / planned : 0,
                    mean(ms.map(r => r.pfs_score).filter(x => x != null)) || 0,
+                   moAeo,
                    sku_avg,
                    mean(ms.map(r => r.visit_compliance)) || 0,
                    uplift, '']);
@@ -3781,8 +4647,9 @@ async function exportExcel() {
       s4DecimalCells.push({ r: ri, c: baseCol + 6, format: '0.0%' });
       s4DecimalCells.push({ r: ri, c: baseCol + 7, format: '0.0%' });
       s4DecimalCells.push({ r: ri, c: baseCol + 8, format: '0.0' });
-      s4DecimalCells.push({ r: ri, c: baseCol + 9, format: '0.0' });
-      s4DecimalCells.push({ r: ri, c: baseCol + 10, format: '0.0%' });
+      s4DecimalCells.push({ r: ri, c: baseCol + 9, format: '0.0%' });  // %AEO
+      s4DecimalCells.push({ r: ri, c: baseCol + 10, format: '0.0' });  // SKU
+      s4DecimalCells.push({ r: ri, c: baseCol + 11, format: '0.0%' }); // Compliance
       rowOffset++;
     }
     s4Data.push([]);
@@ -3887,9 +4754,83 @@ async function exportExcel() {
   }
   XLSX.utils.book_append_sheet(wb, ws5, '5_Outlet_Lifecycle');
 
-  XLSX.writeFile(wb, `Sales_Analytics_${new Date().toISOString().slice(0,10)}.xlsx`);
+  // Sheet 6: RS_Action — roll-up per salesman + all outlets latest month
+  // Mirrors generator.py write_sheet6_rs_action.
+  const last3 = months.slice(-3);
+  const rev3Sum = new Map(), rev3Cnt = new Map();
+  for (const r of allRows) {
+    if (!last3.includes(r.kpi_month)) continue;
+    rev3Sum.set(r.customer_code, (rev3Sum.get(r.customer_code) || 0) + (r.sales || 0));
+    rev3Cnt.set(r.customer_code, (rev3Cnt.get(r.customer_code) || 0) + 1);
+  }
+  const loseOf = cc => {
+    const s = rev3Sum.get(cc), n = rev3Cnt.get(cc);
+    return (n && n > 0) ? Math.round(s / n) : 0;
+  };
+  const lmRows = allRows.filter(r => r.kpi_month === latestMo &&
+                                     (r.channel === 'Presales' || r.channel === 'VanSales'));
+  const SITS = ['เพิ่มความถี่', 'พัฒนา', 'ซื้อไม่สม่ำเสมอ', 'เฝ้าระวัง', 'รอประเมิน', 'แก้ Route Quality', 'ทำให้ร้านกลับมาซื้อ', 'ลดความถี่', 'พิจารณาตัด'];
+
+  // Roll-up per salesman
+  const bySm = new Map();
+  for (const r of lmRows) {
+    const sm = r.salesman_code || '—';
+    if (!bySm.has(sm)) bySm.set(sm, { total: 0, sits: {}, lose: 0, uplift: 0 });
+    const g = bySm.get(sm);
+    g.total++;
+    g.sits[r.outlet_situation] = (g.sits[r.outlet_situation] || 0) + 1;
+    if (r.outlet_situation === 'ลดความถี่' || r.outlet_situation === 'พิจารณาตัด') {
+      g.lose += loseOf(r.customer_code);
+    }
+    if (r.primary_action !== 'A00_no_action') g.uplift += (r.expected_uplift_thb || 0);
+  }
+  const rollHeader = ['สาย (เซลล์)', 'ร้านทั้งหมด', ...SITS, 'ยอดที่จะเสีย (ตัด/ลด)', 'Uplift รวม'];
+  const rollData = [
+    [`RS Route Optimize — เดือน ${latestMo}`],
+    ['ส่วนบน: สรุปรายสาย · ส่วนล่าง: รายร้าน (filter / sort ได้)'],
+    rollHeader,
+  ];
+  const smSorted = [...bySm.keys()].sort();
+  const totals = { total: 0, sits: {}, lose: 0, uplift: 0 };
+  for (const sm of smSorted) {
+    const g = bySm.get(sm);
+    rollData.push([sm, g.total, ...SITS.map(s => g.sits[s] || 0), Math.round(g.lose), Math.round(g.uplift)]);
+    totals.total += g.total;
+    totals.lose += g.lose;
+    totals.uplift += g.uplift;
+    for (const s of SITS) totals.sits[s] = (totals.sits[s] || 0) + (g.sits[s] || 0);
+  }
+  rollData.push(['รวมทั้งหมด', totals.total, ...SITS.map(s => totals.sits[s] || 0), Math.round(totals.lose), Math.round(totals.uplift)]);
+
+  // Outlet detail — sort salesman → customer → severity
+  const sevOrd = { '🔴': 0, '🟡': 1, '🟢': 2, '—': 3 };
+  const detail = [...lmRows].sort((a, b) =>
+    (a.salesman_code || '').localeCompare(b.salesman_code || '') ||
+    (a.customer_code || '').localeCompare(b.customer_code || '') ||
+    (sevOrd[a.severity] ?? 4) - (sevOrd[b.severity] ?? 4));
+  const detailHeader = ['สาย', 'รหัสร้าน', 'ร้าน', 'ยอดขาย', 'AEO', 'กลุ่มร้าน (Quadrant)',
+                        'Action', 'สาเหตุ', 'ผลที่ได้', 'สัญญาณ', 'สรุปรายละเอียด',
+                        'ยอดที่จะเสีย (avg 3ด.)', 'Uplift (บาท/ด.)'];
+  // Build combined sheet: roll-up block, gap, detail block
+  const s6Data = [...rollData, [], [],
+    ['Sales (Coverage × Strike × Bills/ASO × Drop)  |  Route Quality (Geo%, Calls per day, Visit All, Time in Store)'],
+    [`รายร้านทั้งหมด (${detail.length.toLocaleString()} ร้าน)`], detailHeader];
+  for (const r of detail) {
+    s6Data.push([
+      r.salesman_code || '', r.customer_code || '', r.shop_name || '',
+      r.sales || 0, (r.aeo === 0 || r.aeo === 1) ? r.aeo : '', r.quadrant || '', r.outlet_situation || '',
+      r.cause || '', r.result_type || '', r.signal || '', r.situation_evidence || '',
+      loseOf(r.customer_code), Math.round(r.expected_uplift_thb || 0),
+    ]);
+  }
+  const ws6 = XLSX.utils.aoa_to_sheet(s6Data);
+  ws6['!cols'] = [{wch:14},{wch:16},{wch:28},{wch:14},{wch:8},{wch:22},{wch:20},{wch:24},{wch:12},{wch:18},{wch:44},{wch:16},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, ws6, '6_RS_Action');
+
+  const fnamePart = pick.isAll ? '' : `_DC${pick.all.join('-')}`;
+  XLSX.writeFile(wb, `Sales_Analytics${fnamePart}_${new Date().toISOString().slice(0,10)}.xlsx`);
   Swal.close();
-  Swal.fire({ icon: 'success', title: 'Excel exported', text: '4 sheets generated', timer: 1500, showConfirmButton: false });
+  Swal.fire({ icon: 'success', title: 'Excel exported', text: '5 sheets generated', timer: 1500, showConfirmButton: false });
 }
 
 // ============================================================
@@ -3940,6 +4881,16 @@ function init() {
 
   // Trend level
   document.getElementById('trend-level').addEventListener('change', renderTrend);
+  // RS Route Optimize filter
+  const roFilterEl = document.getElementById('ro-filter');
+  if (roFilterEl) {
+    roFilterEl.addEventListener('change', () => {
+      const rows = applyFilters(getAllRows());
+      const months = uniq(rows.map(r => r.kpi_month).filter(Boolean)).sort();
+      const curMonth = APP.filter.month || months[months.length - 1];
+      renderRouteOptimize(rows.filter(r => r.kpi_month === curMonth || months.slice(-3).includes(r.kpi_month)), curMonth);
+    });
+  }
   // F2 issue 4: Diagnostics level selector
   const diagLevelEl = document.getElementById('diag-level');
   if (diagLevelEl) {
@@ -3952,6 +4903,13 @@ function init() {
   // Export
   document.getElementById('btn-export-csv').addEventListener('click', exportCSV);
   document.getElementById('btn-export-excel').addEventListener('click', exportExcel);
+
+  // F2 i18n — language toggle wiring + apply default Thai to static HTML
+  const thBtn = document.getElementById('lang-th');
+  const enBtn = document.getElementById('lang-en');
+  if (thBtn) thBtn.addEventListener('click', () => setLang('th'));
+  if (enBtn) enBtn.addEventListener('click', () => setLang('en'));
+  setLang(APP.lang);   // apply default (Thai) to all data-i18n elements
 
   // Demo data
   document.getElementById('btn-load-demo').addEventListener('click', loadDemoData);
@@ -4103,7 +5061,7 @@ function recomputeScoringAndActions(rows, cfg) {
 
     // F2 G2: same Credit/non-Presales guard as buildOutletMonthly — hold out
     // until a Credit model is designed. Placeholder, not permanent dropout.
-    if (r.channel && r.channel !== 'Presales') {
+    if (r.channel && !isCoreEqChannel(r.channel)) {
       r.primary_action = 'A99_pending_model';
       r.action_reason = 'Credit model pending';
       r.expected_uplift_thb = null;
